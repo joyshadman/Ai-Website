@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Layout, MousePointer2, Zap, Send, Wand2, Globe, Cpu, BotMessageSquare } from "lucide-react";
+import Navbar from "../components/Navbar";
 
 // --- Components ---
 
@@ -11,27 +12,7 @@ const GlassCard = ({ children, className = "" }) => (
   </div>
 );
 
-// Modern navigation bar with glass effect
-const Navbar = () => (
-  <nav className="fixed top-0 w-full z-50 px-6 py-6">
-    <div className="max-w-7xl mx-auto flex justify-between items-center backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-2xl">
-      <div className="flex items-center gap-2">
-        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-          <Sparkles className="text-white w-6 h-6" />
-        </div>
-        <span className="text-white font-bold text-2xl tracking-tight">Apexium<span className="text-purple-500">.</span></span>
-      </div>
-      <div className="hidden md:flex gap-10 text-gray-400 text-sm font-semibold uppercase tracking-widest">
-        <a href="#" className="hover:text-white transition-colors">Engine</a>
-        <a href="#" className="hover:text-white transition-colors">Showcase</a>
-        <a href="#" className="hover:text-white transition-colors">Docs</a>
-      </div>
-      <button className="bg-white text-black px-6 py-2.5 rounded-xl font-bold text-sm hover:scale-105 transition-all active:scale-95">
-        Start Building
-      </button>
-    </div>
-  </nav>
-);
+<Navbar />
 
 // --- Main Page ---
 
