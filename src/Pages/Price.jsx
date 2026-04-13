@@ -84,7 +84,7 @@ const Price = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 bg-gradient-to-b from-white to-white/30 bg-clip-text text-transparent">
-              Engine <span className="text-purple-500">Fuel.</span>
+              Pricing <span className="text-purple-500">overview</span>
             </h1>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg md:text-xl">
               Select the computational power your vision requires. <br className="hidden md:block" />
@@ -119,9 +119,9 @@ const Price = () => {
           ) : (
             /* Blank State / Placeholder Tiers */
             <>
-              <PricingCard title="Neural Lite" price={isAnnual ? "0" : "0"} variant="outline" />
-              <PricingCard title="Neural Pro" price={isAnnual ? "29" : "39"} variant="secondary" isPopular={true} />
-              <PricingCard title="Quantum" price={isAnnual ? "89" : "99"} variant="outline" />
+              <PricingCard title="Free Package" price={isAnnual ? "0" : "0"} variant="outline" />
+              <PricingCard title="Premium Package" price={isAnnual ? "29" : "39"} variant="secondary" isPopular={true} />
+              <PricingCard title="Luxury Package" price={isAnnual ? "89" : "99"} variant="outline" />
             </>
           )}
         </div>

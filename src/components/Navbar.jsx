@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import Logo from "../assets/Ai logo.png";
 
 const Navbar = () => {
   return (
@@ -14,11 +15,11 @@ const Navbar = () => {
       >
         {/* Logo Section */}
         <div className="flex items-center gap-2 cursor-pointer group">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:rotate-12 transition-transform duration-300">
-            <Sparkles className="text-white w-6 h-6" />
-          </div>
+        <div className="h-10 w-10 rounded-full">
+          <img src={Logo} alt="Apexium Logo"  />
+        </div>
           <span className="text-white font-bold text-2xl tracking-tight">
-            Apexium<span className="text-purple-500">.</span>
+            Apexium AI<span className="text-purple-500">.</span>
           </span>
         </div>
 
