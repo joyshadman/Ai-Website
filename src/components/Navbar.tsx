@@ -1,10 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import Logo from "../assets/Ai logo.png";
+import Logo from "../assets/Ai-logo.png";
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
   return (
     <nav className="fixed top-0 w-full z-50 px-6 py-6">
       <motion.div
@@ -14,14 +13,18 @@ const Navbar = () => {
         className="max-w-7xl mx-auto flex justify-between items-center backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-2xl shadow-2xl"
       >
         {/* Logo Section */}
-        <div className="flex items-center gap-2 cursor-pointer group">
-        <div className="h-10 w-10 rounded-full">
-          <img src={Logo} alt="Apexium Logo"  />
-        </div>
+        <Link to="/" className="flex items-center gap-2 cursor-pointer group">
+          <div className="h-10 w-10 rounded-full overflow-hidden">
+            <img 
+              src={Logo} 
+              alt="Apexium Logo" 
+              className="w-full h-full object-cover" 
+            />
+          </div>
           <span className="text-white font-bold text-2xl tracking-tight">
             Apexium AI<span className="text-purple-500">.</span>
           </span>
-        </div>
+        </Link>
 
         {/* Navigation Links */}
         <div className="hidden md:flex gap-10 text-gray-400 text-xs font-bold uppercase tracking-[0.2em]">

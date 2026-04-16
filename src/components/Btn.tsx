@@ -1,15 +1,28 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import React, { ElementType } from "react";
+import { motion, HTMLMotionProps } from "framer-motion";
+import { Loader2, LucideIcon } from "lucide-react";
 
-const Btn = ({ 
+// Define the available variants and sizes as literal types
+type BtnVariant = "primary" | "secondary" | "glass" | "ghost" | "outline";
+type BtnSize = "sm" | "md" | "lg" | "xl";
+
+// Extend HTMLMotionProps to allow all standard button attributes + Framer Motion props
+interface BtnProps extends HTMLMotionProps<"button"> {
+  variant?: BtnVariant;
+  size?: BtnSize;
+  icon?: LucideIcon | ElementType; // Support for Lucide icons or custom components
+  isLoading?: boolean;
+  fullWidth?: boolean;
+}
+
+const Btn: React.FC<BtnProps> = ({ 
   children, 
   onClick, 
   type = "button", 
-  variant = "primary", // primary, secondary, glass, ghost, outline
-  size = "md",       // sm, md, lg, xl
+  variant = "primary", 
+  size = "md", 
   className = "", 
-  icon: Icon,        // Pass a Lucide icon component
+  icon: Icon, 
   isLoading = false,
   disabled = false,
   fullWidth = false,
@@ -19,8 +32,8 @@ const Btn = ({
   // Base Styles
   const baseStyles = "relative inline-flex items-center justify-center font-bold transition-all duration-300 rounded-2xl overflow-hidden active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
   
-  // Variant Styles
-  const variants = {
+  // Variant Styles Mapping
+  const variants: Record<BtnVariant, string> = {
     primary: "bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.1)]",
     secondary: "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]",
     glass: "backdrop-blur-md bg-white/10 border border-white/20 text-white hover:bg-white/20",
@@ -28,8 +41,8 @@ const Btn = ({
     ghost: "bg-transparent text-gray-400 hover:text-white hover:bg-white/5",
   };
 
-  // Size Styles
-  const sizes = {
+  // Size Styles Mapping
+  const sizes: Record<BtnSize, string> = {
     sm: "px-4 py-2 text-xs",
     md: "px-6 py-3 text-sm",
     lg: "px-8 py-4 text-base",

@@ -1,10 +1,30 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, Trash2, Edit3, Plus, Search, Filter, FolderOpen } from "lucide-react";
-import Btn from "../components/Btn";
-import Navbar from "../components/Navbar";
+import { 
+  ExternalLink, 
+  Trash2, 
+  Edit3, 
+  Plus, 
+  Search, 
+  Filter, 
+  FolderOpen,
+  LucideIcon 
+} from "lucide-react";
+import Btn from "../components/Btn.tsx";
+import Navbar from "../components/Navbar.tsx";
 
-const ProjectCard = ({ title, date, status, image }) => (
+// Define the shape of a single Project
+interface ProjectData {
+  title: string;
+  date: string;
+  status: 'Live' | 'Draft';
+  image?: string;
+}
+
+// Props for the ProjectCard component
+interface ProjectCardProps extends ProjectData {}
+
+const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, status, image }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -47,9 +67,9 @@ const ProjectCard = ({ title, date, status, image }) => (
   </motion.div>
 );
 
-const Project = () => {
-  // Empty array to start fresh
-  const [projects, setProjects] = useState([]);
+const Project: React.FC = () => {
+  // Explicitly typing the state array as ProjectData[]
+  const [projects, setProjects] = useState<ProjectData[]>([]);
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
@@ -106,7 +126,8 @@ const Project = () => {
                 key={i} 
                 title={proj.title} 
                 date={proj.date} 
-                status={proj.status} 
+                status={proj.status}
+                image={proj.image}
               />
             ))
           ) : (

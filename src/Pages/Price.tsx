@@ -2,17 +2,32 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Check, 
-  Zap, 
-  Crown, 
-  Rocket, 
   ShieldCheck, 
-  HelpCircle,
-  Sparkles
+  HelpCircle 
 } from "lucide-react";
-import Btn from "../components/Btn";
-import Navbar from "../components/Navbar";
+import Btn from "../components/Btn.tsx";
+import Navbar from "../components/Navbar.tsx";
 
-const PricingCard = ({ title, price, description, features, variant, isPopular }) => (
+// Define the shape of a pricing plan
+interface PricingPlan {
+  title: string;
+  price: string;
+  description?: string;
+  features?: string[];
+  variant?: "primary" | "secondary" | "outline" | "glass" | "ghost";
+  isPopular?: boolean;
+}
+
+interface PricingCardProps extends PricingPlan {}
+
+const PricingCard: React.FC<PricingCardProps> = ({ 
+  title, 
+  price, 
+  description, 
+  features, 
+  variant, 
+  isPopular 
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -40,7 +55,7 @@ const PricingCard = ({ title, price, description, features, variant, isPopular }
     </div>
 
     <div className="space-y-4 mb-10">
-      {features?.length > 0 ? (
+      {features && features.length > 0 ? (
         features.map((feature, i) => (
           <div key={i} className="flex items-center gap-3">
             <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
@@ -67,10 +82,10 @@ const PricingCard = ({ title, price, description, features, variant, isPopular }
   </motion.div>
 );
 
-const Price = () => {
-  // Keeping the plans array blank for your data
-  const [plans, setPlans] = useState([]);
-  const [isAnnual, setIsAnnual] = useState(true);
+const Price: React.FC = () => {
+  // Explicitly typing the state array as PricingPlan[]
+  const [plans] = useState<PricingPlan[]>([]);
+  const [isAnnual, setIsAnnual] = useState<boolean>(true);
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
@@ -101,6 +116,7 @@ const Price = () => {
             >
               <motion.div 
                 animate={{ x: isAnnual ? 28 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 className="w-5 h-5 bg-purple-500 rounded-full shadow-lg shadow-purple-500/40"
               />
             </button>
@@ -117,11 +133,29 @@ const Price = () => {
               <PricingCard key={i} {...plan} />
             ))
           ) : (
-            /* Blank State / Placeholder Tiers */
             <>
-              <PricingCard title="Free Package" price={isAnnual ? "0" : "0"} variant="outline" />
-              <PricingCard title="Premium Package" price={isAnnual ? "29" : "39"} variant="secondary" isPopular={true} />
-              <PricingCard title="Luxury Package" price={isAnnual ? "89" : "99"} variant="outline" />
+              <PricingCard 
+                title="Free Package" 
+                price="0" 
+                description="Perfect for exploring the neural workspace."
+                variant="outline" 
+                features={["1 AI Website", "Basic Analytics", "Community Support"]}
+              />
+              <PricingCard 
+                title="Premium Package" 
+                price={isAnnual ? "29" : "39"} 
+                description="The standard for professional creators."
+                variant="secondary" 
+                isPopular={true} 
+                features={["Unlimited Websites", "Advanced AI Training", "Priority Edge Hosting", "Custom Domains"]}
+              />
+              <PricingCard 
+                title="Luxury Package" 
+                price={isAnnual ? "89" : "99"} 
+                description="Unrestricted computational power."
+                variant="outline" 
+                features={["Everything in Premium", "Dedicated Neural Weights", "24/7 Core Team Access", "White-label Options"]}
+              />
             </>
           )}
         </div>

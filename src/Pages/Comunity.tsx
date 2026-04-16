@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Users, 
-  MessageSquare, 
   Heart, 
   Share2, 
   TrendingUp, 
@@ -11,10 +10,30 @@ import {
   Zap,
   Globe
 } from "lucide-react";
-import Btn from "../components/Btn";
-import Navbar from "../components/Navbar";
+import Btn from "../components/Btn.tsx";
+import Navbar from "../components/Navbar.tsx";
 
-const CommunityCard = ({ author, prompt, likes, shares, image, tags }) => (
+// Define the shape of a Community Post
+interface CommunityPost {
+  author?: string;
+  prompt?: string;
+  likes?: number;
+  shares?: number;
+  image?: string;
+  tags?: string[];
+}
+
+// Props for the CommunityCard component
+interface CommunityCardProps extends CommunityPost {}
+
+const CommunityCard: React.FC<CommunityCardProps> = ({ 
+  author, 
+  prompt, 
+  likes, 
+  shares, 
+  image, 
+  tags 
+}) => (
   <motion.div 
     initial={{ opacity: 0, scale: 0.95 }}
     whileInView={{ opacity: 1, scale: 1 }}
@@ -65,9 +84,9 @@ const CommunityCard = ({ author, prompt, likes, shares, image, tags }) => (
   </motion.div>
 );
 
-const Community = () => {
-  // Keeping it blank for your custom data
-  const [posts, setPosts] = useState([]);
+const Community: React.FC = () => {
+  // Explicitly typing the posts state
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
@@ -85,7 +104,7 @@ const Community = () => {
               Social Engine
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
-              Neural <span className="text-purple-500 font-outline">Showcase.</span>
+              Neural <span className="text-purple-500">Showcase.</span>
             </h1>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
               Explore the frontiers of AI web design. Browse the most popular 
