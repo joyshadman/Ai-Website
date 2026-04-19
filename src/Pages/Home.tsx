@@ -11,19 +11,19 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar.tsx";
 
-// Interface for the GlassCard props
+// --- INTERFACES ---
 interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
 }
 
-// Interface for Feature items
 interface FeatureItem {
   icon: React.ReactNode;
   title: string;
   desc: string;
 }
 
+// --- SUB-COMPONENTS ---
 const GlassCard: React.FC<GlassCardProps> = ({ children, className = "" }) => (
   <div className={`backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl shadow-2xl ${className}`}>
     {children}
@@ -31,6 +31,7 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = "" }) => (
 );
 
 export default function Home() {
+  // Hooks are correctly placed inside the component body here
   const [inputValue, setInputValue] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
