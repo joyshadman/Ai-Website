@@ -11,7 +11,6 @@ import {
   Globe
 } from "lucide-react";
 import Btn from "../components/Btn.tsx";
-import Navbar from "../components/Navbar.tsx";
 
 // Define the shape of a Community Post
 interface CommunityPost {
@@ -90,7 +89,6 @@ const Community: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
-      <Navbar />
 
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}

@@ -5,11 +5,6 @@ import { Loader2, LucideIcon } from "lucide-react";
 type BtnVariant = "primary" | "secondary" | "glass" | "ghost" | "outline";
 type BtnSize = "sm" | "md" | "lg" | "xl";
 
-/**
- * We Omit 'children' from HTMLMotionProps because Framer Motion's type 
- * includes 'MotionValue', which standard React elements like <span> 
- * cannot render, causing the TS(2322) error.
- */
 interface BtnProps extends Omit<HTMLMotionProps<"button">, "children"> {
   children?: React.ReactNode; 
   variant?: BtnVariant;

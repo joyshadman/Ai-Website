@@ -9,7 +9,7 @@ import {
   Loader2,
   MousePointer2
 } from "lucide-react";
-import Navbar from "../components/Navbar.tsx";
+
 
 // --- INTERFACES ---
 interface GlassCardProps {
@@ -23,7 +23,6 @@ interface FeatureItem {
   desc: string;
 }
 
-// --- SUB-COMPONENTS ---
 const GlassCard: React.FC<GlassCardProps> = ({ children, className = "" }) => (
   <div className={`backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl shadow-2xl ${className}`}>
     {children}
@@ -31,7 +30,6 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = "" }) => (
 );
 
 export default function Home() {
-  // Hooks are correctly placed inside the component body here
   const [inputValue, setInputValue] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -41,7 +39,6 @@ export default function Home() {
 
     setLoading(true);
     
-    // Simulating API call
     setTimeout(() => {
       setLoading(false);
     }, 3000);
@@ -56,7 +53,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden selection:bg-purple-500/30 font-sans">
       
-      {/* --- BACKGROUND DECOR --- */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[130px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[130px] rounded-full" />
@@ -69,9 +65,6 @@ export default function Home() {
         />
       </div>
 
-      <Navbar />
-
-      {/* Hero Section */}
       <section className="relative pt-44 pb-20 px-6">
         <div className="max-w-7xl mx-auto text-center">
           
@@ -89,7 +82,6 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* --- AI CHAT COMMAND CENTER --- */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}

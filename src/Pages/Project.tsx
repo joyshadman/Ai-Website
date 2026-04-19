@@ -1,19 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  ExternalLink, 
-  Trash2, 
-  Edit3, 
-  Plus, 
-  Search, 
-  Filter, 
-  FolderOpen,
-  LucideIcon 
+import {
+  ExternalLink,
+  Trash2,
+  Edit3,
+  Plus,
+  Search,
+  Filter,
+  FolderOpen
 } from "lucide-react";
 import Btn from "../components/Btn.tsx";
 import Navbar from "../components/Navbar.tsx";
 
-// Define the shape of a single Project
 interface ProjectData {
   title: string;
   date: string;
@@ -21,11 +19,10 @@ interface ProjectData {
   image?: string;
 }
 
-// Props for the ProjectCard component
-interface ProjectCardProps extends ProjectData {}
+interface ProjectCardProps extends ProjectData { }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, status, image }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
@@ -33,9 +30,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, status, image })
   >
     <div className="aspect-video w-full bg-[#0a0a0a] overflow-hidden relative">
       <div className="absolute inset-0 bg-gradient-to-t from-[#030303] to-transparent opacity-60 z-10" />
-      <img 
-        src={image || "/api/placeholder/400/225"} 
-        alt={title} 
+      <img
+        src={image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&h=225&auto=format&fit=crop"}
+        alt={title}
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-50 group-hover:opacity-80"
       />
       <div className="absolute inset-0 z-20 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -52,9 +49,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, status, image })
           </h3>
           <p className="text-gray-500 text-sm">{date}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
-          status === 'Live' ? 'border-green-500/30 bg-green-500/10 text-green-400' : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
-        }`}>
+        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${status === 'Live' ? 'border-green-500/30 bg-green-500/10 text-green-400' : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
+          }`}>
           {status}
         </span>
       </div>
@@ -67,15 +63,19 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, status, image })
   </motion.div>
 );
 
-const Project: React.FC = () => {
-  // Explicitly typing the state array as ProjectData[]
-  const [projects, setProjects] = useState<ProjectData[]>([]);
+const ProjectPage: React.FC = () => {
+  // 1. Fixed the typing here: ProjectData[] and initialized with an empty array
+  const [projects, setProjects] = useState<ProjectData[]>([
+    { title: "AI Dashboard UI", date: "Feb 28, 2026", status: "Live" },
+    { title: "Crypto Landing", date: "Feb 24, 2026", status: "Draft" }
+  ]);
+  const [loading, setLoading] = useState(true);
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto mt-30">
+      <div className="max-w-7xl mx-auto mt-10">
         {/* Header Area */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
           <motion.div
@@ -90,16 +90,16 @@ const Project: React.FC = () => {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3"
           >
             <div className="relative hidden sm:block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search projects..." 
+              <input
+                type="text"
+                placeholder="Search projects..."
                 className="bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-6 outline-none focus:border-purple-500/50 transition-all w-64 text-sm"
               />
             </div>
@@ -121,15 +121,28 @@ const Project: React.FC = () => {
         {/* Project Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {projects.length > 0 ? (
-            projects.map((proj, i) => (
-              <ProjectCard 
-                key={i} 
-                title={proj.title} 
-                date={proj.date} 
-                status={proj.status}
-                image={proj.image}
-              />
-            ))
+            <>
+              {projects.map((proj, i) => (
+                <ProjectCard
+                  key={i}
+                  title={proj.title}
+                  date={proj.date}
+                  status={proj.status}
+                  image={proj.image}
+                />
+              ))}
+              
+              {/* Persistent "Add New" Card */}
+              <motion.button
+                whileHover={{ scale: 0.98 }}
+                className="border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center min-h-[300px] gap-4 hover:border-purple-500/30 hover:bg-white/[0.01] transition-all group"
+              >
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/10 transition-colors">
+                  <Plus className="w-8 h-8 text-gray-500 group-hover:text-purple-400" />
+                </div>
+                <span className="text-gray-500 font-bold group-hover:text-purple-400">Generate New Project</span>
+              </motion.button>
+            </>
           ) : (
             /* Blank/Empty State UI */
             <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.01]">
@@ -141,23 +154,10 @@ const Project: React.FC = () => {
               <Btn variant="primary" icon={Plus} size="lg">Generate New Project</Btn>
             </div>
           )}
-
-          {/* Persistent "Add New" Card if projects exist */}
-          {projects.length > 0 && (
-            <motion.button 
-              whileHover={{ scale: 0.98 }}
-              className="border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center min-h-[300px] gap-4 hover:border-purple-500/30 hover:bg-white/[0.01] transition-all group"
-            >
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/10 transition-colors">
-                <Plus className="w-8 h-8 text-gray-500 group-hover:text-purple-400" />
-              </div>
-              <span className="text-gray-500 font-bold group-hover:text-purple-400">Generate New Project</span>
-            </motion.button>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default Project;
+export default ProjectPage;

@@ -3,10 +3,12 @@ import Home from './Pages/Home'
 import Comunity from './Pages/Comunity'
 import Price from './Pages/Price'
 import Project from './Pages/Project'
+import Navbar from './components/Navbar'
 
 const App = () => {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/comunity" element={<Comunity />} />
