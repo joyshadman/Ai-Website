@@ -12,6 +12,7 @@ interface BtnProps extends Omit<HTMLMotionProps<"button">, "children"> {
   icon?: LucideIcon | ElementType;
   isLoading?: boolean;
   fullWidth?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; // Added explicit onClick handler
 }
 
 const Btn: React.FC<BtnProps> = ({ 
@@ -68,12 +69,17 @@ const Btn: React.FC<BtnProps> = ({
 
       <div className="flex items-center gap-2 relative z-10">
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center"
+          >
+            <Loader2 className="w-4 h-4 animate-spin" />
+          </motion.div>
         ) : (
           Icon && <Icon className={`${children ? "w-4 h-4" : "w-5 h-5"}`} />
         )}
         
-        {/* Children is now safely recognized as React.ReactNode */}
         {children && <span>{children}</span>}
       </div>
     </motion.button>

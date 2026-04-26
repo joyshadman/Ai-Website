@@ -82,12 +82,33 @@ const PricingCard: React.FC<PricingCardProps> = ({
 );
 
 const Price: React.FC = () => {
-  // Explicitly typing the state array as PricingPlan[]
-  const [plans] = useState<PricingPlan[]>([]);
-  const [isAnnual, setIsAnnual] = useState<boolean>(true);
+  const [plans] = useState<PricingPlan[]>([
+    {
+      title: "Free Package",
+      price: "0",
+      description: "Perfect for exploring the neural workspace.",
+      variant: "outline",
+      features: ["1 AI Website", "Basic Analytics", "Community Support"]
+    },
+    {
+      title: "Premium Package",
+      price: "39",
+      description: "The standard for professional creators.",
+      variant: "secondary",
+      isPopular: true,
+      features: ["Unlimited Websites", "Advanced AI Training", "Priority Edge Hosting", "Custom Domains"]
+    },
+    {
+      title: "Luxury Package",
+      price: "99",
+      description: "Unrestricted computational power.",
+      variant: "outline",
+      features: ["Everything in Premium", "Dedicated Neural Weights", "24/7 Core Team Access", "White-label Options"]
+    }
+  ]);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
+    <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans selection:bg-purple-500/30">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-24">
@@ -103,58 +124,13 @@ const Price: React.FC = () => {
               Scale your digital presence with neural precision.
             </p>
           </motion.div>
-
-          {/* Toggle (Monthly/Annual) */}
-          <div className="mt-12 flex items-center justify-center gap-4">
-            <span className={`text-sm font-bold ${!isAnnual ? "text-white" : "text-gray-600"}`}>Monthly</span>
-            <button 
-              onClick={() => setIsAnnual(!isAnnual)}
-              className="w-14 h-7 bg-white/5 border border-white/10 rounded-full p-1 relative transition-colors"
-            >
-              <motion.div 
-                animate={{ x: isAnnual ? 28 : 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="w-5 h-5 bg-purple-500 rounded-full shadow-lg shadow-purple-500/40"
-              />
-            </button>
-            <span className={`text-sm font-bold ${isAnnual ? "text-white" : "text-gray-600"}`}>
-              Annual <span className="text-purple-400 text-[10px] ml-1">(-20%)</span>
-            </span>
-          </div>
         </div>
 
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-          {plans.length > 0 ? (
-            plans.map((plan, i) => (
-              <PricingCard key={i} {...plan} />
-            ))
-          ) : (
-            <>
-              <PricingCard 
-                title="Free Package" 
-                price="0" 
-                description="Perfect for exploring the neural workspace."
-                variant="outline" 
-                features={["1 AI Website", "Basic Analytics", "Community Support"]}
-              />
-              <PricingCard 
-                title="Premium Package" 
-                price={isAnnual ? "29" : "39"} 
-                description="The standard for professional creators."
-                variant="secondary" 
-                isPopular={true} 
-                features={["Unlimited Websites", "Advanced AI Training", "Priority Edge Hosting", "Custom Domains"]}
-              />
-              <PricingCard 
-                title="Luxury Package" 
-                price={isAnnual ? "89" : "99"} 
-                description="Unrestricted computational power."
-                variant="outline" 
-                features={["Everything in Premium", "Dedicated Neural Weights", "24/7 Core Team Access", "White-label Options"]}
-              />
-            </>
-          )}
+          {plans.map((plan, i) => (
+            <PricingCard key={i} {...plan} />
+          ))}
         </div>
 
         {/* FAQ/Trust Section */}
@@ -166,7 +142,9 @@ const Price: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-lg mb-2">Secure Deployment</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">Every site generated is hosted on encrypted, edge-optimized servers with 99.9% uptime.</p>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Every site generated is hosted on encrypted, edge-optimized servers with 99.9% uptime.
+                </p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -175,7 +153,9 @@ const Price: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-lg mb-2">Need a Custom Hub?</h4>
-                <p className="text-gray-500 text-sm leading-relaxed">Looking for Enterprise-scale AI generation? Contact our core team for custom neural weights.</p>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Looking for Enterprise-scale AI generation? Contact our core team for custom neural weights.
+                </p>
               </div>
             </div>
           </div>
