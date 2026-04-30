@@ -7,7 +7,8 @@ import {
   Plus,
   Search,
   Filter,
-  FolderOpen
+  FolderOpen,
+  Link
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Btn from "../components/Btn.tsx";
@@ -166,6 +167,7 @@ const ProjectPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Link to={`/view/${project.id}`} target="_blank" className="block" key={Project.id}>
           <AnimatePresence mode="popLayout">
             {loading ? (
               <React.Fragment key="loading">

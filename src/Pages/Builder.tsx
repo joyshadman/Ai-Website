@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Cpu, 
@@ -9,19 +9,60 @@ import {
   RotateCcw,
   Monitor,
   Smartphone,
+  Tablet,
   Trash2,
-  Cloud, puck,
   Save,
-  Users
+  Users,
+  Lock,
+  UserCircle,
+  LogOut,
+  Send,
+  MessageSquare,
+  ShieldCheck
 } from "lucide-react";
 import Btn from "../components/Btn.tsx";
 
 const Builder = () => {
+  const [user, setUser] = useState<{ name: string; email: string } | null>({
+    name: "Alex Designer",
+    email: "alex@neural.ai"
+  });
+
+  // Builder & Generation States
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Initializing Neural Weights...");
   const [logs, setLogs] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [isGenerating, setIsGenerating] = useState(true);
+  const [device, setDevice] = useState<'phone' | 'tablet' | 'desktop'>("desktop");
+  const [project, setProject] = useState({
+    id: "apex_8821",
+    current_code: `
+      <html>
+        <head>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-black text-white flex items-center justify-center h-screen font-sans">
+          <div class="text-center space-y-4">
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">Neural Interface v1</h1>
+            <p class="text-gray-400 text-lg">AI-Generated architecture optimized for edge deployment.</p>
+            <div class="flex gap-4 justify-center">
+              <div class="px-6 py-2 bg-white/10 border border-white/10 rounded-full">Explorer</div>
+              <div class="px-6 py-2 bg-purple-600 rounded-full">Deploy Now</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+  });
+
+  // Chat States
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
+    { role: "ai", text: "System online. How can I refine the architecture?" }
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const steps = [
     { p: 10, s: "Analyzing prompt intent...", l: "> GET /neural-engine/intent" },
@@ -31,8 +72,12 @@ const Builder = () => {
     { p: 90, s: "Optimizing for Edge Deployment...", l: "> PUSHING: Vercel Edge Network" },
     { p: 100, s: "Construction Complete.", l: "> READY: neural-site-v1.deploy" },
   ];
-
+  const fetchproject = async () => {
+  
+  
+  }
   useEffect(() => {
+    if (!user) return;
     if (progress < 100) {
       const timer = setTimeout(() => {
         const nextStep = steps.find((s) => s.p > progress) || steps[steps.length - 1];
@@ -41,180 +86,152 @@ const Builder = () => {
         if (progress % 15 === 0) {
           setLogs((prev) => [...prev.slice(-5), nextStep.l]);
         }
-      }, 40); // Slightly faster for better UX
+      }, 40); 
       return () => clearTimeout(timer);
     } else {
       setIsComplete(true);
+      setIsGenerating(false);
     }
-  }, [progress]);
+  }, [progress, user]);
 
-  const resetBuilder = () => {
-    setProgress(0);
-    setLogs([]);
-    setIsComplete(false);
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const newMsg = { role: "user" as const, text: chatInput };
+    setMessages(prev => [...prev, newMsg]);
+    setChatInput("");
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: "ai", text: `Refining UI components based on "${newMsg.text}"...` }]);
+      setIsTyping(false);
+    }, 1500);
   };
 
-  const handleDelete = () => {
-    if(confirm("Are you sure you want to delete this build?")) {
-      resetBuilder();
+  const getDeviceWidth = () => {
+    switch(device) {
+      case 'phone': return '375px';
+      case 'tablet': return '768px';
+      default: return '100%';
     }
   };
 
-  const publishToCommunity = () => {
-    alert("Project shared to the community gallery!");
-  };
+  if (!user) return <div className="min-h-screen bg-black flex items-center justify-center"><Btn variant="primary" onClick={() => setUser({name: "Demo", email: "a@b.com"})}>Login</Btn></div>;
 
   return (
     <div className="min-h-screen bg-[#030303] text-white pt-24 pb-20 px-6 font-sans overflow-hidden">
       <div className="max-w-7xl mx-auto">
         
         {/* Workspace Toolbar */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-wrap items-center justify-between gap-4 p-4 backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem]"
-        >
+        <motion.div className="mb-8 flex items-center justify-between p-4 backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem]">
           <div className="flex items-center gap-4">
             <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-              <button 
-                onClick={() => setViewMode("desktop")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "desktop" ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30" : "text-gray-500 hover:text-white"}`}
-              >
-                <Monitor className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setViewMode("mobile")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "mobile" ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30" : "text-gray-500 hover:text-white"}`}
-              >
-                <Smartphone className="w-4 h-4" />
-              </button>
+              <button onClick={() => setDevice("desktop")} className={`p-2 rounded-lg ${device === "desktop" ? "bg-purple-500 shadow-lg shadow-purple-500/20" : "text-gray-500"}`}><Monitor className="w-4 h-4" /></button>
+              <button onClick={() => setDevice("tablet")} className={`p-2 rounded-lg ${device === "tablet" ? "bg-purple-500 shadow-lg shadow-purple-500/20" : "text-gray-500"}`}><Tablet className="w-4 h-4" /></button>
+              <button onClick={() => setDevice("phone")} className={`p-2 rounded-lg ${device === "phone" ? "bg-purple-500 shadow-lg shadow-purple-500/20" : "text-gray-500"}`}><Smartphone className="w-4 h-4" /></button>
             </div>
-            <div className="h-6 w-[1px] bg-white/10" />
-            <span className="text-xs font-mono text-gray-500 truncate max-w-[150px]">project_id: apex_8821</span>
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+                <ShieldCheck className="w-3 h-3 text-green-500" />
+                <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Encrypted</span>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleDelete}
-              className="p-3 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
-              title="Delete Build"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
-              title="Save Draft"
-            >
-              <Save className="w-4 h-4" /> Save
-            </button>
-            <button 
-              onClick={publishToCommunity}
-              disabled={!isComplete}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-purple-600 rounded-xl hover:bg-purple-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Users className="w-4 h-4" /> Publish
-            </button>
+          <div className="flex gap-2">
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"><Save className="w-4 h-4" /> Save Draft</button>
+            <button disabled={isGenerating} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-purple-600 rounded-xl hover:bg-purple-500 transition-all disabled:opacity-30">Publish</button>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Column: AI Terminal */}
+          {/* SIDEBAR */}
           <div className="lg:col-span-4 space-y-6">
-            <motion.div 
-              className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl"
-            >
-              <div className="flex items-center gap-3 mb-8">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <Cpu className="w-5 h-5 text-purple-400" />
-                </div>
-                <h2 className="text-xl font-bold tracking-tight">Neural Engine</h2>
+            
+            {/* User Info */}
+            <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem] p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center"><UserCircle className="w-5 h-5" /></div>
+                <span className="text-sm font-bold">{user.name}</span>
               </div>
+              <button onClick={() => setUser(null)} className="text-gray-500 hover:text-white"><LogOut className="w-4 h-4" /></button>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
-                  <span>Construction</span>
-                  <span className="text-purple-400">{progress}%</span>
-                </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                  <motion.div 
-                    animate={{ width: `${progress}%` }}
-                    className="h-full bg-gradient-to-r from-purple-600 to-blue-500"
-                  />
-                </div>
-                <p className="text-sm text-gray-400 h-10">{status}</p>
+            {/* AI Obsidian Chat */}
+            <motion.div className="bg-black border border-white/10 rounded-[2.5rem] flex flex-col h-[380px] overflow-hidden shadow-2xl">
+              <div className="p-4 border-b border-white/5 flex items-center gap-2 bg-white/[0.01]">
+                <MessageSquare className="w-4 h-4 text-purple-400" />
+                <span className="text-[10px] font-bold uppercase tracking-tighter text-gray-400">Neural Chat v4</span>
               </div>
-
-              <div className="mt-8 bg-black/40 rounded-2xl p-4 font-mono text-[11px] text-purple-300/70 border border-white/5 space-y-2 h-40 overflow-hidden">
-                <div className="flex items-center gap-2 text-gray-600 mb-2 border-b border-white/5 pb-2">
-                  <Terminal className="w-3 h-3" /> Real-time Logs
-                </div>
-                {logs.map((log, i) => (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={i}>
-                    {log}
-                  </motion.div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] ${msg.role === "user" ? "bg-purple-600 shadow-lg shadow-purple-500/10" : "bg-white/5 border border-white/10 text-gray-300"}`}>
+                      {msg.text}
+                    </div>
+                  </div>
                 ))}
+                <div ref={chatEndRef} />
               </div>
+              <form onSubmit={handleSendMessage} className="p-4 bg-white/[0.01] border-t border-white/5">
+                <div className="relative">
+                  <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} type="text" placeholder="Refine design..." className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-[11px] focus:border-purple-500 transition-all" />
+                  <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-500"><Send className="w-3 h-3" /></button>
+                </div>
+              </form>
             </motion.div>
 
-            <AnimatePresence>
+            {/* Progress Card */}
+            <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-6">
+              <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-3 uppercase"><span>Generating Architecture</span> <span>{progress}%</span></div>
+              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${progress}%` }} className="h-full bg-gradient-to-r from-purple-500 to-blue-500" />
+              </div>
+              <p className="mt-4 text-[11px] text-gray-500 font-mono italic">{status}</p>
+            </div>
+          </div>
+
+          {/* MAIN PREVIEW PANEL (Integrating the Sandbox from image) */}
+          <div className="lg:col-span-8">
+            <motion.div 
+              animate={{ width: getDeviceWidth(), margin: device === "desktop" ? "0" : "0 auto" }}
+              className="relative group w-full aspect-video bg-gray-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500"
+            >
+              {/* iframe Sandbox Logic from your first image */}
+              <div className="relative w-full h-full bg-gray-950 overflow-hidden">
+                {project.current_code ? (
+                  <iframe 
+                    srcDoc={project.current_code}
+                    className="absolute top-0 left-0 w-[1200px] h-[800px] origin-top-left pointer-events-none"
+                    sandbox="allow-scripts allow-same-origin"
+                    style={{ transform: device === 'phone' ? 'scale(0.31)' : device === 'tablet' ? 'scale(0.64)' : 'scale(1)' }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 font-mono text-xs">
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" /> Awaiting Generation...
+                  </div>
+                )}
+                
+                {/* Generation Overlay */}
+                <AnimatePresence>
+                  {isGenerating && (
+                    <motion.div exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                      <div className="relative w-20 h-20">
+                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="absolute inset-0 border-2 border-purple-500/20 border-t-purple-500 rounded-full" />
+                        <div className="absolute inset-0 flex items-center justify-center text-purple-400 font-bold text-xs">{progress}%</div>
+                      </div>
+                      <span className="mt-4 text-xs font-bold tracking-widest text-white/40 uppercase">Neural Synthesis</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Completion Tag */}
               {isComplete && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-                  <Btn variant="primary" icon={Globe} fullWidth>Live Preview</Btn>
-                  <Btn variant="glass" icon={RotateCcw} onClick={resetBuilder} fullWidth>Reset Weights</Btn>
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute bottom-6 right-6 px-4 py-2 bg-green-500 text-black text-[10px] font-black uppercase rounded-full shadow-lg">
+                  Build Verified
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
-
-          {/* Right Column: Preview Canvas */}
-          <div className="lg:col-span-8 relative">
-            <motion.div 
-              animate={{ 
-                width: viewMode === "mobile" ? "375px" : "100%",
-                margin: viewMode === "mobile" ? "0 auto" : "0"
-              }}
-              className="aspect-video bg-white/[0.01] border border-white/10 rounded-[2.5rem] overflow-hidden relative shadow-2xl transition-all duration-500 ease-in-out"
-            >
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none" />
-              
-              <div className="p-8 space-y-8">
-                {/* Simulated Content */}
-                <motion.div animate={{ opacity: progress > 20 ? 1 : 0.2 }} className="h-10 w-full bg-white/5 rounded-xl border border-white/5" />
-                
-                <div className="space-y-4">
-                  <motion.div animate={{ width: progress > 40 ? "70%" : "30%", opacity: progress > 30 ? 1 : 0.1 }} className="h-12 bg-gradient-to-r from-purple-500/20 to-transparent rounded-xl" />
-                  <motion.div animate={{ width: "90%", opacity: progress > 50 ? 1 : 0.1 }} className="h-4 bg-white/5 rounded-full" />
-                </div>
-
-                <div className={`grid ${viewMode === "mobile" ? "grid-cols-1" : "grid-cols-3"} gap-4`}>
-                  {[1, 2, 3].map((i) => (
-                    <motion.div 
-                      key={i}
-                      animate={{ opacity: progress > (70 + i*5) ? 1 : 0 }}
-                      className="h-32 bg-white/5 border border-white/5 rounded-2xl" 
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Completion Overlay */}
-              <AnimatePresence>
-                {isComplete && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center flex-col"
-                  >
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4">
-                      <CheckCircle2 className="w-8 h-8 text-purple-600" />
-                    </motion.div>
-                    <h3 className="text-xl font-bold">Build Verified</h3>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           </div>
+
         </div>
       </div>
     </div>
