@@ -44,7 +44,6 @@ export default function Home() {
 
     setLoading(true);
     setErrorMessage("");
-    // Trigger the Builder UI immediately for the simulation
     setShowBuilder(true); 
 
     try {
@@ -64,8 +63,7 @@ export default function Home() {
       setGeneratedHtml(data.html);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unexpected error occurred.");
-      setShowBuilder(false); // Drop back to home if request fails
-    } finally {
+      setShowBuilder(false); 
       setLoading(false);
     }
   };
@@ -78,8 +76,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden selection:bg-purple-500/30 font-sans">
-      
-      {/* Ambient Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[130px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[130px] rounded-full" />
@@ -144,7 +140,6 @@ export default function Home() {
                 {errorMessage && <p className="mt-4 text-sm text-red-400">{errorMessage}</p>}
               </motion.div>
 
-              {/* Feature Grid Below Hero */}
               <div className="max-w-7xl mx-auto mt-20">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                   {features.map((item, i) => (
@@ -174,7 +169,6 @@ export default function Home() {
             animate={{ opacity: 1, scale: 1 }}
             className="relative"
           >
-            {/* Back Button to return to Home */}
             <div className="absolute top-10 left-10 z-50">
                 <button 
                     onClick={() => setShowBuilder(false)}
@@ -183,11 +177,7 @@ export default function Home() {
                     ← Back to Prompt
                 </button>
             </div>
-            
-            {/* The Builder Component - Pass state as needed */}
             <Builder />
-            
-            {/* If the build is finished and we have HTML, you could trigger a modal or full-screen preview here */}
           </motion.div>
         )}
       </AnimatePresence>

@@ -21,14 +21,13 @@ import {
   ShieldCheck
 } from "lucide-react";
 import Btn from "../components/Btn.tsx";
-
+  
 const Builder = () => {
   const [user, setUser] = useState<{ name: string; email: string } | null>({
     name: "Alex Designer",
     email: "alex@neural.ai"
   });
 
-  // Builder & Generation States
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Initializing Neural Weights...");
   const [logs, setLogs] = useState<string[]>([]);
@@ -76,6 +75,7 @@ const Builder = () => {
   
   
   }
+
   useEffect(() => {
     if (!user) return;
     if (progress < 100) {
@@ -140,12 +140,8 @@ const Builder = () => {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* SIDEBAR */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">          
           <div className="lg:col-span-4 space-y-6">
-            
-            {/* User Info */}
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem] p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center"><UserCircle className="w-5 h-5" /></div>
@@ -154,7 +150,6 @@ const Builder = () => {
               <button onClick={() => setUser(null)} className="text-gray-500 hover:text-white"><LogOut className="w-4 h-4" /></button>
             </div>
 
-            {/* AI Obsidian Chat */}
             <motion.div className="bg-black border border-white/10 rounded-[2.5rem] flex flex-col h-[380px] overflow-hidden shadow-2xl">
               <div className="p-4 border-b border-white/5 flex items-center gap-2 bg-white/[0.01]">
                 <MessageSquare className="w-4 h-4 text-purple-400" />
@@ -178,7 +173,6 @@ const Builder = () => {
               </form>
             </motion.div>
 
-            {/* Progress Card */}
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-6">
               <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-3 uppercase"><span>Generating Architecture</span> <span>{progress}%</span></div>
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
@@ -188,13 +182,11 @@ const Builder = () => {
             </div>
           </div>
 
-          {/* MAIN PREVIEW PANEL (Integrating the Sandbox from image) */}
           <div className="lg:col-span-8">
             <motion.div 
               animate={{ width: getDeviceWidth(), margin: device === "desktop" ? "0" : "0 auto" }}
               className="relative group w-full aspect-video bg-gray-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500"
             >
-              {/* iframe Sandbox Logic from your first image */}
               <div className="relative w-full h-full bg-gray-950 overflow-hidden">
                 {project.current_code ? (
                   <iframe 
@@ -209,7 +201,6 @@ const Builder = () => {
                   </div>
                 )}
                 
-                {/* Generation Overlay */}
                 <AnimatePresence>
                   {isGenerating && (
                     <motion.div exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -222,8 +213,6 @@ const Builder = () => {
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* Completion Tag */}
               {isComplete && (
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute bottom-6 right-6 px-4 py-2 bg-green-500 text-black text-[10px] font-black uppercase rounded-full shadow-lg">
                   Build Verified

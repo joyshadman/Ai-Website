@@ -8,12 +8,13 @@ import {
   Search,
   Filter,
   FolderOpen,
-  Link
+  Monitor,
+  Tablet,
+  Smartphone
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Btn from "../components/Btn.tsx";
 import { dummyProjects } from "../assets/assets.ts";
-
 
 interface ProjectData {
   id: string;
@@ -42,11 +43,11 @@ const SkeletonCard = () => (
   </div>
 );
 
-// Updated ProjectCard to receive an onDelete handler
 const ProjectCard: React.FC<ProjectData & { onDelete: (id: string) => void }> = ({ 
   id, title, date, status, image, current_code, onDelete 
 }) => (
   <motion.div
+    layout
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.95 }}
@@ -72,7 +73,9 @@ const ProjectCard: React.FC<ProjectData & { onDelete: (id: string) => void }> = 
       )}
 
       <div className="absolute inset-0 z-20 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <Btn variant="primary" size="sm" icon={Edit3}>Edit</Btn>
+        <Link to={`/view/${id}`} className="no-underline">
+          <Btn variant="primary" size="sm" icon={Edit3}>Edit</Btn>
+        </Link>
         <Btn variant="glass" size="sm" icon={ExternalLink} />
       </div>
     </div>
@@ -109,25 +112,25 @@ const ProjectCard: React.FC<ProjectData & { onDelete: (id: string) => void }> = 
 const ProjectPage: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [device, setDevice] = useState<'phone' | 'tablet' | 'desktop'>("desktop");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const navigate = useNavigate();
 
-  const fetchProjects = async () => {
+  const fetchProject = async () => {
     setLoading(true);
-    // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
     setProjects(dummyProjects);
     setLoading(false);
   };
 
   const deleteProject = async (projectId: string) => {
     setProjects(prev => prev.filter(p => p.id !== projectId));
-    
-    console.log(`Project ${projectId} deleted.`);
   };
 
   useEffect(() => {
-    fetchProjects();
+    fetchProject();
   }, []);
 
   return (
@@ -139,11 +142,11 @@ const ProjectPage: React.FC = () => {
               My <span className="text-purple-500">Creations.</span>
             </h1>
             <p className="text-gray-400 max-w-md">
-              Manage, edit, and deploy your AI-generated digital assets from one central workspace.
+              Manage, edit, and deploy your digital assets from one central workspace.
             </p>
           </motion.div>
-
           <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
+
             <div className="relative hidden sm:block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
@@ -152,22 +155,13 @@ const ProjectPage: React.FC = () => {
                 className="bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-6 outline-none focus:border-purple-500/50 transition-all w-64 text-sm"
               />
             </div>
-            <Btn variant="secondary" icon={Plus} onClick={() => setLoading(true)}>New Site</Btn>
+            <Btn variant="secondary" icon={Plus} onClick={() => setIsSaving(true)}>
+              {isSaving ? "Saving..." : "New Site"}
+            </Btn>
           </motion.div>
         </div>
-
-        <div className="flex gap-4 mb-10 overflow-x-auto pb-2 scrollbar-hide">
-          <Btn variant="glass" size="sm" className="bg-purple-600/20 border-purple-500/50 text-purple-300">All Projects</Btn>
-          <Btn variant="ghost" size="sm">Recently Edited</Btn>
-          <Btn variant="ghost" size="sm">Live Sites</Btn>
-          <Btn variant="ghost" size="sm">Drafts</Btn>
-          <div className="ml-auto">
-            <Btn variant="ghost" size="sm" icon={Filter}>Filters</Btn>
-          </div>
-        </div>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Link to={`/view/${project.id}`} target="_blank" className="block" key={Project.id}>
           <AnimatePresence mode="popLayout">
             {loading ? (
               <React.Fragment key="loading">
@@ -185,7 +179,8 @@ const ProjectPage: React.FC = () => {
 
                 <motion.button
                   whileHover={{ scale: 0.98 }}
-                  className="border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center min-h-[300px] gap-4 hover:border-purple-500/30 hover:bg-white/[0.01] transition-all group"
+                  onClick={() => navigate('/')}
+                  className="border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center min-h-[400px] gap-4 hover:border-purple-500/30 hover:bg-white/[0.01] transition-all group"
                 >
                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/10 transition-colors">
                     <Plus className="w-8 h-8 text-gray-500 group-hover:text-purple-400" />
@@ -204,7 +199,7 @@ const ProjectPage: React.FC = () => {
                   <FolderOpen className="w-10 h-10 text-gray-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-400 mb-2">No projects found</h2>
-                <p className="text-gray-600 mb-8">Start by generating your first AI-powered website.</p>
+                <p className="text-gray-600 mb-8">Start by generating your first website.</p>
                 <Btn variant="primary" icon={Plus} onClick={() => navigate('/')} size="lg">
                   Generate New Project
                 </Btn>
