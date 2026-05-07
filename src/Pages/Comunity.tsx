@@ -1,309 +1,221 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Cpu, 
-  Sparkles, 
-  CheckCircle2, 
-  Terminal,
+import {
+  ExternalLink,
+  Eye,
+  Search,
+  Filter,
   Globe,
-  RotateCcw,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Trash2,
-  Save,
-  Users,
-  Lock,
-  UserCircle,
-  LogOut,
-  Send,
-  MessageSquare,
-  ShieldCheck,
-  RefreshCw,
-  ExternalLink
+  Heart,
+  User,
+  Sparkles,
+  TrendingUp
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import Btn from "../components/Btn.tsx";
+import { dummyProjects } from "../assets/assets.ts";
 
-const Builder = () => {
-  const [user, setUser] = useState<{ name: string; email: string } | null>({
-    name: "Alex Designer",
-    email: "alex@neural.ai"
-  });
+interface CommunityProject {
+  id: string;
+  title: string;
+  author: string;
+  likes: number;
+  views: string;
+  status: 'Live' | 'Featured';
+  image?: string;
+  current_code?: string;
+}
 
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("Initializing Neural Weights...");
-  const [logs, setLogs] = useState<string[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(true);
-  const [device, setDevice] = useState<'phone' | 'tablet' | 'desktop'>("desktop");
-  const [project, setProject] = useState({
-    id: "apex_8821",
-    current_code: "" // Initialized as empty for fetching
-  });
+const SkeletonCard = () => (
+  <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden h-[420px] animate-pulse">
+    <div className="aspect-video w-full bg-white/5" />
+    <div className="p-6 space-y-4">
+      <div className="flex justify-between">
+        <div className="space-y-2 w-full">
+          <div className="h-6 bg-white/10 rounded-md w-3/4" />
+          <div className="h-4 bg-white/5 rounded-md w-1/4" />
+        </div>
+      </div>
+      <div className="pt-4 border-t border-white/5 flex gap-2">
+        <div className="h-8 bg-white/5 rounded-xl w-20" />
+        <div className="h-8 bg-white/5 rounded-xl w-20" />
+      </div>
+    </div>
+  </div>
+);
 
-  // Chat States
-  const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
-    { role: "ai", text: "System online. How can I refine the architecture?" }
-  ]);
-  const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const steps = [
-    { p: 10, s: "Analyzing prompt intent...", l: "> GET /neural-engine/intent" },
-    { p: 30, s: "Generating Component Tree...", l: "> COMPILING: Navbar, Hero, Features" },
-    { p: 50, s: "Applying Glassmorphic Styling...", l: "> TAILWIND: backdrop-blur-xl border-white/10" },
-    { p: 70, s: "Injecting Framer Motion...", l: "> ANIMATION: spring(stiffness: 100)" },
-    { p: 90, s: "Optimizing for Edge Deployment...", l: "> PUSHING: Vercel Edge Network" },
-    { p: 100, s: "Construction Complete.", l: "> READY: neural-site-v1.deploy" },
-  ];
-
-  // Placeholder for Backend Fetching
-  const fetchProject = async () => {
-    try {
-      setIsGenerating(true);
-      setProgress(0);
+const CommunityCard: React.FC<CommunityProject> = ({ 
+  id, title, author, likes, views, status, image, current_code 
+}) => (
+  <motion.div
+    layout
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.95 }}
+    className="group relative backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden hover:border-purple-500/40 transition-all duration-500"
+  >
+    <div className="aspect-video w-full bg-[#0a0a0a] overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-t from-[#030303] to-transparent opacity-60 z-10" />
       
-      // REPLACE THIS WITH YOUR BACKEND URL
-      // const response = await fetch(`your-backend-api.com/projects/${project.id}`);
-      // const data = await response.json();
-      
-      // Mock data for now
-      const mockCode = `
-        <html>
-          <head><script src="https://cdn.tailwindcss.com"></script></head>
-          <body class="bg-black text-white flex items-center justify-center h-screen font-sans">
-            <div class="text-center space-y-6 p-8 backdrop-blur-2xl bg-white/5 border border-white/10 rounded-[3rem]">
-              <h1 class="text-6xl font-black bg-gradient-to-br from-purple-400 via-fuchsia-500 to-blue-500 bg-clip-text text-transparent italic">
-                A P E X
-              </h1>
-              <p class="text-gray-400 font-mono text-sm tracking-[0.3em]">RE-FETCHED FROM BACKEND</p>
-              <div class="flex gap-4 justify-center">
-                <div class="w-12 h-1 bg-purple-500 rounded-full"></div>
-                <div class="w-12 h-1 bg-blue-500 rounded-full"></div>
-              </div>
+      {current_code ? (
+        <iframe
+          srcDoc={current_code}
+          title={title}
+          className="absolute top-0 left-0 w-[1200px] h-[800px] origin-top-left pointer-events-none border-none opacity-60 group-hover:opacity-80 transition-opacity"
+          sandbox="allow-scripts allow-same-origin"
+          style={{ transform: 'scale(0.25)' }}
+        />
+      ) : (
+        <img
+          src={image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&h=225&auto=format&fit=crop"}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-70"
+        />
+      )}
+
+      <div className="absolute inset-0 z-20 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <Link to={`/preview/${id}`} className="no-underline">
+          <Btn variant="primary" size="sm" icon={Eye}>View Build</Btn>
+        </Link>
+        <Btn variant="glass" size="sm" icon={ExternalLink} />
+      </div>
+
+      {status === 'Featured' && (
+        <div className="absolute top-4 left-4 z-30 px-3 py-1 rounded-full bg-purple-500 text-[9px] font-black uppercase tracking-tighter flex items-center gap-1 shadow-lg shadow-purple-500/20">
+          <Sparkles className="w-3 h-3" /> Featured
+        </div>
+      )}
+    </div>
+
+    <div className="p-6">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-400 transition-colors line-clamp-1">
+            {title}
+          </h3>
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <div className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center">
+                <User className="w-2.5 h-2.5" />
             </div>
-          </body>
-        </html>
-      `;
+            <span className="hover:text-white transition-colors cursor-pointer">{author}</span>
+          </div>
+        </div>
+      </div>
 
-      // Simulating synthesis progress while fetching
-      setProject(prev => ({ ...prev, current_code: mockCode }));
-    } catch (error) {
-      console.error("Failed to fetch project:", error);
-      setStatus("Error connecting to neural node...");
-    }
-  };
+      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+        <div className="flex gap-4">
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+                <Heart className="w-3.5 h-3.5 hover:text-red-500 cursor-pointer transition-colors" />
+                <span>{likes}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+                <Eye className="w-3.5 h-3.5" />
+                <span>{views}</span>
+            </div>
+        </div>
+        <div className="text-[10px] font-bold text-purple-400/80 uppercase tracking-widest flex items-center gap-1">
+            <Globe className="w-3 h-3" /> Public
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const Community: React.FC = () => {
+  const [projects, setProjects] = useState<CommunityProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!user) return;
-    
-    // Initial fetch on load
-    if (!project.current_code) {
-        fetchProject();
-    }
+    const fetchCommunityProjects = async () => {
+      setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      // Ensure dummyProjects exists before mapping
+      const communityData: CommunityProject[] = (dummyProjects || []).map(p => ({
+        ...p,
+        author: p.author || "Apex User",
+        likes: p.likes ?? Math.floor(Math.random() * 500),
+        views: p.views ?? (Math.random() * 5).toFixed(1) + "k",
+        status: p.status ?? (Math.random() > 0.8 ? 'Featured' : 'Live')
+      }));
 
-    if (progress < 100) {
-      const timer = setTimeout(() => {
-        const nextStep = steps.find((s) => s.p > progress) || steps[steps.length - 1];
-        setProgress((prev) => prev + 1);
-        setStatus(nextStep.s);
-      }, 40); 
-      return () => clearTimeout(timer);
-    } else {
-      setIsComplete(true);
-      setIsGenerating(false);
-    }
-  }, [progress, user]);
+      setProjects(communityData);
+      setLoading(false);
+    };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    const newMsg = { role: "user" as const, text: chatInput };
-    setMessages(prev => [...prev, newMsg]);
-    setChatInput("");
-    setIsTyping(true);
-    
-    // Logic to send chat to backend and update current_code
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: "ai", text: `Re-synthesizing interface based on "${newMsg.text}"...` }]);
-      setIsTyping(false);
-      fetchProject(); // Re-fetch/Re-generate on chat
-    }, 1500);
-  };
+    fetchCommunityProjects();
+  }, []);
 
-  const getDeviceWidth = () => {
-    switch(device) {
-      case 'phone': return '375px';
-      case 'tablet': return '768px';
-      default: return '100%';
-    }
-  };
-
-  if (!user) return <div className="min-h-screen bg-black flex items-center justify-center"><Btn variant="primary" onClick={() => setUser({name: "Demo", email: "a@b.com"})}>Login</Btn></div>;
+  // DRY & Safe Filtering: useMemo prevents the "toLowerCase" crash on undefined
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    return projects.filter(p => 
+      p?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [projects, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white pt-24 pb-20 px-6 font-sans overflow-hidden">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#030303] text-white pt-32 pb-20 px-6 font-sans">
+      <div className="max-w-7xl mx-auto mt-10">
         
-        {/* Workspace Toolbar */}
-        <motion.div className="mb-8 flex items-center justify-between p-4 backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem]">
-          <div className="flex items-center gap-4">
-            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-              <button onClick={() => setDevice("desktop")} className={`p-2 rounded-lg ${device === "desktop" ? "bg-purple-500 shadow-lg shadow-purple-500/20 text-white" : "text-gray-500"}`}><Monitor className="w-4 h-4" /></button>
-              <button onClick={() => setDevice("tablet")} className={`p-2 rounded-lg ${device === "tablet" ? "bg-purple-500 shadow-lg shadow-purple-500/20 text-white" : "text-gray-500"}`}><Tablet className="w-4 h-4" /></button>
-              <button onClick={() => setDevice("phone")} className={`p-2 rounded-lg ${device === "phone" ? "bg-purple-500 shadow-lg shadow-purple-500/20 text-white" : "text-gray-500"}`}><Smartphone className="w-4 h-4" /></button>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center gap-2 mb-4 text-purple-500 font-bold uppercase tracking-[0.3em] text-[10px]">
+                <TrendingUp className="w-4 h-4" /> Global Showcase
             </div>
-            <div className="h-6 w-[1px] bg-white/10" />
-            <button onClick={fetchProject} className="p-2 text-gray-500 hover:text-purple-400 transition-colors">
-                <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"><Save className="w-4 h-4" /> Save</button>
-            <button disabled={isGenerating} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-purple-600 rounded-xl hover:bg-purple-500 transition-all disabled:opacity-30">Publish</button>
-          </div>
-        </motion.div>
+            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 italic">
+              Neural <span className="text-purple-500">Showcase.</span>
+            </h1>
+            <p className="text-gray-400 max-w-lg leading-relaxed">
+              Explore high-end digital experiences architected by the community using our neural engine.
+            </p>
+          </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">          
-          <div className="lg:col-span-4 space-y-6">
-            {/* User Profile */}
-            <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2rem] p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs">A</div>
-                <span className="text-sm font-bold">{user.name}</span>
-              </div>
-              <button onClick={() => setUser(null)} className="text-gray-500 hover:text-white"><LogOut className="w-4 h-4" /></button>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search templates..."
+                className="bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-6 outline-none focus:border-purple-500/50 transition-all w-full md:w-72 text-sm backdrop-blur-md"
+              />
             </div>
-
-            {/* Chat Module */}
-            <motion.div className="bg-black border border-white/10 rounded-[2.5rem] flex flex-col h-[400px] overflow-hidden shadow-2xl">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
-                <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-purple-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Neural Engine</span>
-                </div>
-                {isTyping && <Sparkles className="w-3 h-3 text-purple-500 animate-pulse" />}
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] leading-relaxed ${msg.role === "user" ? "bg-purple-600 shadow-lg shadow-purple-500/10" : "bg-white/5 border border-white/10 text-gray-300"}`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-              <form onSubmit={handleSendMessage} className="p-4 bg-white/[0.01] border-t border-white/5">
-                <div className="relative">
-                  <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} type="text" placeholder="Tell AI what to change..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-10 text-[11px] focus:border-purple-500 transition-all outline-none" />
-                  <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-500 hover:text-purple-400 transition-colors"><Send className="w-4 h-4" /></button>
-                </div>
-              </form>
-            </motion.div>
-
-            {/* Progress Bar */}
-            <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-6">
-              <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-widest"><span>System Status</span> <span>{progress}%</span></div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div animate={{ width: `${progress}%` }} className="h-full bg-gradient-to-r from-purple-500 to-blue-500" />
-              </div>
-              <p className="mt-4 text-[11px] text-gray-500 font-mono italic truncate">{status}</p>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE: PREVIEW WORKSPACE */}
-          <div className="lg:col-span-8">
-            <motion.div 
-              animate={{ 
-                width: getDeviceWidth(), 
-                margin: device === "desktop" ? "0" : "0 auto" 
-              }}
-              className="relative group w-full h-[650px] bg-[#0a0a0a] border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_50px_-12px_rgba(168,85,247,0.2)] transition-all duration-700 ease-in-out"
-            >
-              {/* Browser Header Decorator */}
-              <div className="absolute top-0 inset-x-0 h-10 bg-white/5 border-b border-white/5 z-30 flex items-center px-6 justify-between">
-                <div className="flex gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/40" />
-                </div>
-                <div className="bg-black/40 px-4 py-1 rounded-md text-[9px] text-gray-500 font-mono border border-white/5">
-                    {project.id}.neural-site.ai
-                </div>
-                <ExternalLink className="w-3 h-3 text-gray-600" />
-              </div>
-
-              <div className="pt-10 w-full h-full relative overflow-hidden">
-                {project.current_code ? (
-                  <iframe 
-                    srcDoc={project.current_code}
-                    className="w-full h-full border-none"
-                    title="Neural Preview"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-600 font-mono text-xs">
-                    <Sparkles className="w-4 h-4 mr-2 animate-pulse" /> Connecting to Neural Backend...
-                  </div>
-                )}
-                
-                {/* Generation Overlay */}
-                <AnimatePresence>
-                  {isGenerating && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }} 
-                        className="absolute inset-0 bg-black/90 backdrop-blur-md z-40 flex flex-col items-center justify-center"
-                    >
-                      <div className="relative w-24 h-24 mb-6">
-                        <motion.div 
-                            animate={{ rotate: 360 }} 
-                            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} 
-                            className="absolute inset-0 border-t-2 border-r-2 border-purple-500 rounded-full" 
-                        />
-                        <motion.div 
-                            animate={{ rotate: -360 }} 
-                            transition={{ repeat: Infinity, duration: 3, ease: "linear" }} 
-                            className="absolute inset-2 border-b-2 border-l-2 border-blue-500/30 rounded-full" 
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center text-white font-black text-sm">{progress}%</div>
-                      </div>
-                      <span className="text-[10px] font-black tracking-[0.5em] text-purple-500 uppercase">Synchronizing Build</span>
-                      <div className="mt-8 flex gap-1">
-                         {[...Array(3)].map((_, i) => (
-                             <motion.div 
-                                key={i}
-                                animate={{ y: [0, -5, 0] }}
-                                transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                                className="w-1 h-1 bg-white/20 rounded-full"
-                             />
-                         ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <AnimatePresence>
-                {isComplete && (
-                    <motion.div 
-                        initial={{ x: 50, opacity: 0 }} 
-                        animate={{ x: 0, opacity: 1 }} 
-                        className="absolute bottom-8 right-8 flex items-center gap-3 px-5 py-2.5 bg-white text-black rounded-full shadow-[0_10px_30px_rgba(255,255,255,0.2)] z-50"
-                    >
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-[11px] font-black uppercase tracking-wider">Neural Build Ready</span>
-                    </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </div>
+            <Btn variant="secondary" icon={Filter} />
+          </motion.div>
+        </div>
+        
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <AnimatePresence mode="popLayout">
+            {loading ? (
+              // FIX: Removed keyed React.Fragment to fix 'ref' warning
+              [1, 2, 3, 4, 5, 6].map((n) => <SkeletonCard key={`skeleton-${n}`} />)
+            ) : filteredProjects.length > 0 ? (
+              filteredProjects.map((project) => (
+                <CommunityCard key={project.id} {...project} />
+              ))
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                key="empty"
+                className="col-span-full py-32 flex flex-col items-center justify-center border border-white/5 rounded-[3rem] bg-white/[0.01]"
+              >
+                <Globe className="w-16 h-16 text-gray-700 mb-6" />
+                <h2 className="text-2xl font-bold text-gray-400 mb-2">The world is quiet...</h2>
+                <p className="text-gray-600">No projects match your search criteria.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
   );
 };
 
-export default Builder;
+export default Community;
