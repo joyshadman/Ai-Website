@@ -7,4 +7,6 @@ export const authClient: ReturnType<typeof createAuthClient> = createAuthClient(
     },
 });
 
+console.log(import.meta.env.VITE_BASEURL)
+
 export const { useSignIn, useSignOut, useSession } = authClient;

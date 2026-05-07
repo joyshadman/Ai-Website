@@ -4,10 +4,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react"; 
 import Logo from "../assets/Ai-logo.png";
 import Btn from "./Btn"; 
+import { authClient } from "@/lib/auth-client";
+import { UserButton } from "@daveyplate/better-auth-ui"
+
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+
+  const {data: session} = authClient.useSession()
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -28,7 +33,6 @@ const Navbar: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto flex justify-between items-center backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-2xl shadow-2xl relative z-50"
       >
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 cursor-pointer group">
           <div className="h-10 w-10 rounded-full overflow-hidden border border-white/10">
             <img src={Logo} alt="Logo" className="w-full h-full object-cover" />
@@ -38,7 +42,6 @@ const Navbar: React.FC = () => {
           </span>
         </Link>
 
-        {/* Desktop Links */}
         <div className="hidden md:flex gap-10 text-gray-400 text-xs font-bold uppercase tracking-[0.2em]">
           {navLinks.map((link) => (
             <Link key={link.name} to={link.path} className="hover:text-white transition-colors duration-300 relative group">
@@ -48,15 +51,17 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Desktop CTA & Mobile Toggle */}
         <div className="flex items-center gap-4">
           <div className="hidden md:block">
-            <Btn variant="primary" size="sm" onClick={() => navigate("/auth/signin")}>
-              Sign Up / Login
-            </Btn>
+            {!session?.user ? (
+              <Btn variant="primary" size="sm" onClick={() => navigate("/auth/signin")}>
+                Get Started
+              </Btn>
+            ) : (
+              <UserButton size="icon" />
+            )}
           </div>
 
-          {/* Hamburger Button */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden text-white p-2 hover:bg-white/10 rounded-xl transition-colors"
@@ -66,7 +71,6 @@ const Navbar: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div

@@ -7,6 +7,7 @@ import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import { Toaster } from "sonner"
 import AuthPage from './Pages/auth/authpage'
+import Settings from './Pages/Setting'
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/price" element={<Price />} />
         <Route path="/project" element={<Project />} />
         <Route path="/auth/:pathname" element={<AuthPage />} />
+        <Route path="/account/settings" element={<Settings />} />
       </Routes>
       <Footer />
     </>
