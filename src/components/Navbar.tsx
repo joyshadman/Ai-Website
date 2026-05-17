@@ -1,18 +1,36 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react"; 
+import { Menu, X, Zap } from "lucide-react";
 import Logo from "../assets/Ai-logo.png";
-import Btn from "./Btn"; 
+import Btn from "./Btn";
 import { authClient } from "@/lib/auth-client";
 import { UserButton } from "@daveyplate/better-auth-ui"
+import { toast } from "sonner";
 
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [credits, setCredits] = useState(0);
 
-  const {data: session} = authClient.useSession()
+  const { data: session } = authClient.useSession()
+
+  const getcredits = async () => {
+    try {
+      const { data } = await authClient.get("/api/user/credits");
+      setCredits(data.credits);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      getcredits();
+    }
+  }, [session?.user]);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -58,11 +76,17 @@ const Navbar: React.FC = () => {
                 Get Started
               </Btn>
             ) : (
-              <UserButton size="icon" />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
+                  <Zap size={12} className="text-yellow-400 fill-yellow-400" />
+                  <span className="text-white text-xs font-semibold">{credits}</span>
+                </div>
+                <UserButton size="icon" />
+              </div>
             )}
           </div>
 
-          <button 
+          <button
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden text-white p-2 hover:bg-white/10 rounded-xl transition-colors"
           >
@@ -92,18 +116,29 @@ const Navbar: React.FC = () => {
                   </Link>
                 </motion.div>
               ))}
+
               <motion.div variants={menuVariants} className="w-full pt-4 border-t border-white/10">
-                <Btn 
-                  variant="primary" 
-                  fullWidth 
-                  size="lg"
-                  onClick={() => {
-                    setIsOpen(false);
-                    navigate("/auth/signin");
-                  }}
-                >
-                  Sign Up / Login
-                </Btn>
+                {!session?.user ? (
+                  <Btn
+                    variant="primary"
+                    fullWidth
+                    size="lg"
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate("/auth/signin");
+                    }}
+                  >
+                    Sign Up / Login
+                  </Btn>
+                ) : (
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="flex items-center gap-1.5 bg-white/10 border border-white/10 rounded-full px-4 py-2">
+                      <Zap size={14} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-white text-sm font-semibold">{credits} credits</span>
+                    </div>
+                    <UserButton size="icon" />
+                  </div>
+                )}
               </motion.div>
             </div>
           </motion.div>
