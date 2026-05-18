@@ -6,7 +6,6 @@ import Logo from "../assets/Ai-logo.png";
 import Btn from "./Btn";
 import { authClient } from "@/lib/auth-client";
 import { UserButton } from "@daveyplate/better-auth-ui"
-import { toast } from "sonner";
 import api from "@/configs/axios";
 
 

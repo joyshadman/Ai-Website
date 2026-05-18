@@ -1,4 +1,4 @@
-import { AccountSettingsCards, ChangePasswordCard, DeleteAccountCard } from '@daveyplate/better-auth-ui'
+import { AccountSettingsCards, ChangePasswordCard } from '@daveyplate/better-auth-ui'
 
 const Setting = () => {
     const midnightStyles = {

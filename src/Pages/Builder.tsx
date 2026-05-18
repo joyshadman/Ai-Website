@@ -76,11 +76,10 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => (
         <Sparkles className="w-3.5 h-3.5 text-purple-400" />
       </div>
     )}
-    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-      msg.role === "user"
+    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === "user"
         ? "bg-purple-600/30 border border-purple-500/30 text-white rounded-tr-sm"
         : "bg-white/5 border border-white/10 text-gray-300 rounded-tl-sm"
-    }`}>
+      }`}>
       {msg.content}
     </div>
   </motion.div>
@@ -92,11 +91,10 @@ const VersionItem: React.FC<{
   onRollback: (id: string) => void;
   rolling: boolean;
 }> = ({ version, isCurrent, onRollback, rolling }) => (
-  <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${
-    isCurrent
+  <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${isCurrent
       ? "border-purple-500/40 bg-purple-500/10"
       : "border-white/5 bg-white/[0.02] hover:border-white/10"
-  }`}>
+    }`}>
     <div className="flex-1 min-w-0">
       <p className="text-xs text-white font-medium truncate">{version.description}</p>
       <p className="text-[10px] text-gray-500 mt-0.5">
@@ -134,7 +132,7 @@ interface LogEntry {
 const GeneratingPanel: React.FC<{
   elapsed: number;
   logs: LogEntry[];
-  logsRef: React.RefObject<HTMLDivElement>;
+  logsRef: React.RefObject<HTMLDivElement | null>;
   onRetry: () => void;
   timedOut: boolean;
 }> = ({ elapsed, logs, logsRef, onRetry, timedOut }) => {
@@ -166,9 +164,8 @@ const GeneratingPanel: React.FC<{
         <p className="text-white font-semibold mb-1">
           {timedOut ? "Generation timed out" : "Building your website..."}
         </p>
-        <div className={`flex items-center justify-center gap-2 text-sm font-mono ${
-          timedOut ? "text-red-400" : isWarning ? "text-yellow-400" : "text-gray-400"
-        }`}>
+        <div className={`flex items-center justify-center gap-2 text-sm font-mono ${timedOut ? "text-red-400" : isWarning ? "text-yellow-400" : "text-gray-400"
+          }`}>
           <Clock className="w-3.5 h-3.5" />
           {fmt(elapsed)}
           {isWarning && !timedOut && (
@@ -211,12 +208,11 @@ const GeneratingPanel: React.FC<{
           style={{ scrollbarWidth: "thin" }}
         >
           {logs.map((log, i) => (
-            <div key={i} className={`flex gap-2 ${
-              log.type === "error" ? "text-red-400"
-              : log.type === "warn" ? "text-yellow-400"
-              : log.type === "success" ? "text-green-400"
-              : "text-gray-400"
-            }`}>
+            <div key={i} className={`flex gap-2 ${log.type === "error" ? "text-red-400"
+                : log.type === "warn" ? "text-yellow-400"
+                  : log.type === "success" ? "text-green-400"
+                    : "text-gray-400"
+              }`}>
               <span className="text-gray-600 shrink-0">[{fmt(log.time)}]</span>
               <span>{log.msg}</span>
             </div>
@@ -596,13 +592,12 @@ const Builder: React.FC = () => {
             <button
               key={d}
               onClick={() => setDevice(d)}
-              className={`p-2 rounded-lg transition-all ${
-                device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"
-              }`}
+              className={`p-2 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"
+                }`}
             >
               {d === "desktop" ? <Monitor className="w-4 h-4" />
                 : d === "tablet" ? <Tablet className="w-4 h-4" />
-                : <Smartphone className="w-4 h-4" />}
+                  : <Smartphone className="w-4 h-4" />}
             </button>
           ))}
         </div>
@@ -611,11 +606,10 @@ const Builder: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowCode((v) => !v)}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-              showCode
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${showCode
                 ? "bg-purple-500/20 border-purple-500/30 text-purple-300"
                 : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-            }`}
+              }`}
           >
             <Code2 className="w-3.5 h-3.5" /> Code
           </button>
@@ -640,15 +634,14 @@ const Builder: React.FC = () => {
           </button>
 
           <button onClick={togglePublish} disabled={publishing || !project.current_code}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 ${
-              project.isPublished
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 ${project.isPublished
                 ? "bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
                 : "bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:bg-purple-600/50"
-            }`}
+              }`}
           >
             {publishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
               : project.isPublished ? <Globe className="w-3.5 h-3.5" />
-              : <GlobeLock className="w-3.5 h-3.5" />}
+                : <GlobeLock className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{project.isPublished ? "Published" : "Publish"}</span>
           </button>
         </div>
@@ -663,11 +656,10 @@ const Builder: React.FC = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
-                  activeTab === tab
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab
                     ? "text-purple-400 border-b-2 border-purple-500"
                     : "text-gray-500 hover:text-gray-300"
-                }`}
+                  }`}
               >
                 {tab === "chat" ? "Chat" : "History"}
               </button>

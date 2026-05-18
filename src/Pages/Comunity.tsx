@@ -6,11 +6,9 @@ import {
   Search,
   Filter,
   Globe,
-  Heart,
   User,
   Sparkles,
   TrendingUp,
-  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Btn from "../components/Btn.tsx";
