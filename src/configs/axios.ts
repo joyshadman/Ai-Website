@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const apiBaseURL =
+  import.meta.env.VITE_BASE_URL?.trim() ||
+  import.meta.env.VITE_BASEURL?.trim() ||
+  '';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL || 'http://localhost:3000',
+  baseURL: apiBaseURL,
   withCredentials: true,
 });
 

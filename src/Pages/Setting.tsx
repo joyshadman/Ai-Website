@@ -33,15 +33,6 @@ const Setting = () => {
                     />
                 </div>
 
-                <div className="w-full">
-                    <DeleteAccountCard 
-                        classNames={{
-                            base: 'bg-red-950/10 ring-1 ring-red-500/30 max-w-2xl mx-auto rounded-xl border-none',
-                            footer: 'bg-red-950/20 border-t border-red-500/20'
-                        }}
-                    />   
-                </div>
-
             </div>
         </div>
     )

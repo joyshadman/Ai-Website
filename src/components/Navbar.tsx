@@ -1,36 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Zap } from "lucide-react";
 import Logo from "../assets/Ai-logo.png";
 import Btn from "./Btn";
 import { authClient } from "@/lib/auth-client";
 import { UserButton } from "@daveyplate/better-auth-ui"
 import { toast } from "sonner";
+import api from "@/configs/axios";
 
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [credits, setCredits] = useState(0);
+  const [credits, setCredits] = useState<number | null>(null);
 
-  const { data: session } = authClient.useSession()
+  const { data: session } = authClient.useSession();
 
   const getcredits = async () => {
     try {
-      const { data } = await authClient.get("/api/user/credits");
+      const { data } = await api.get<{ credits: number }>("/api/user/credit");
       setCredits(data.credits);
-    } catch (error) {
-      toast.error(error?.response?.data?.message || error.message);
-      console.log(error);
+    } catch (error: unknown) {
+      console.error(
+        error instanceof Error ? error.message : "Could not load credits"
+      );
+      setCredits(0);
     }
   };
 
   useEffect(() => {
     if (session?.user) {
       getcredits();
+    } else {
+      setCredits(null);
     }
-  }, [session?.user]);
+  }, [session?.user?.id, location.pathname]);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -79,7 +85,9 @@ const Navbar: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-white/10 border border-white/10 rounded-full px-3 py-1.5">
                   <Zap size={12} className="text-yellow-400 fill-yellow-400" />
-                  <span className="text-white text-xs font-semibold">{credits}</span>
+                  <span className="text-white text-xs font-semibold">
+                    {credits === null ? "—" : credits}
+                  </span>
                 </div>
                 <UserButton size="icon" />
               </div>
@@ -134,7 +142,9 @@ const Navbar: React.FC = () => {
                   <div className="flex items-center justify-center gap-3">
                     <div className="flex items-center gap-1.5 bg-white/10 border border-white/10 rounded-full px-4 py-2">
                       <Zap size={14} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-white text-sm font-semibold">{credits} credits</span>
+                      <span className="text-white text-sm font-semibold">
+                        {credits === null ? "—" : credits} credits
+                      </span>
                     </div>
                     <UserButton size="icon" />
                   </div>

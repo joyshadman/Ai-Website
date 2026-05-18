@@ -1,6 +1,15 @@
+import React from "react"
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
 import { authClient } from "@/lib/auth-client"
-import { useNavigate, NavLink } from "react-router-dom"
+import { useNavigate, NavLink, type NavLinkProps } from "react-router-dom"
+
+const AuthLink = React.forwardRef<
+  HTMLAnchorElement,
+  NavLinkProps & { href?: string }
+>(({ href, to, ...props }, ref) => (
+  <NavLink ref={ref} to={to ?? href ?? "/"} {...props} />
+))
+AuthLink.displayName = "AuthLink"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -9,7 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AuthUIProvider
       authClient={authClient}
       navigate={navigate}
-      Link={(props) => <NavLink {...props} to={props.href} />}
+      Link={AuthLink}
     >
       {children}
     </AuthUIProvider>
