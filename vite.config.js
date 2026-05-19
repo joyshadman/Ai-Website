@@ -5,7 +5,12 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiTarget = env.VITE_API_BASE_URL?.trim() || 'http://localhost:3000'
+  // Proxy always targets local API unless you set a full override URL in .env
+  const override = env.VITE_API_BASE_URL?.trim()
+  const apiTarget =
+    override && !override.startsWith('http://localhost')
+      ? override
+      : 'http://localhost:3000'
 
   return {
     plugins: [react(), tailwindcss()],

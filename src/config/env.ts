@@ -1,10 +1,15 @@
+const PRODUCTION_API = "https://ai-website-api.vercel.app";
+
 /**
- * API base URL. Leave empty in dev (Vite proxies /api → localhost:3000).
- * Production builds fall back to the deployed API if unset.
+ * Dev: empty → relative /api URLs, Vite proxies to localhost:3000.
+ * Prod: always the API host (never empty — better-auth defaults to window.location).
  */
 export function getApiBaseUrl(): string {
-  const url = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
-  if (url) return url.replace(/\/$/, "");
-  if (import.meta.env.PROD) return "https://ai-website-api.vercel.app";
-  return "";
+  const override = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (import.meta.env.DEV) {
+    return override ? override.replace(/\/$/, "") : "";
+  }
+
+  return (override || PRODUCTION_API).replace(/\/$/, "");
 }
