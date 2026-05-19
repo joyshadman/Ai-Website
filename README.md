@@ -1,18 +1,19 @@
 # AI Website Frontend
 
-This frontend sends a prompt to the backend and shows the generated website live inside a preview frame.
-
 ## Setup
 
-1. Install dependencies:
-   - `npm install`
-2. Create `.env`:
-   - `VITE_API_BASE_URL=http://localhost:3000`
-3. Start dev server:
-   - `npm run dev`
+1. `npm install`
+2. Start the API (`../Ai-Website-API`, port 3000): `npm run dev`
+3. Start the frontend: `npm run dev` → http://localhost:5173
 
-## How it works
+## `.env`
 
-- Prompt input is submitted from `Home.tsx`.
-- The app calls `POST /api/generate` on the backend.
-- Returned HTML is rendered in an `iframe` using `srcDoc`.
+One file, one variable:
+
+```env
+VITE_API_BASE_URL=
+```
+
+Leave it empty locally so Vite proxies `/api` to `http://localhost:3000`. Production builds use `https://ai-website-api.vercel.app` automatically when it is empty.
+
+To point local dev at the deployed API, set `VITE_API_BASE_URL=https://ai-website-api.vercel.app`.
