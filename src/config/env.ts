@@ -1,4 +1,4 @@
-const PRODUCTION_API = "https://ai-website-api.vercel.app";
+const PRODUCTION_API = "https://ai-website-api.onrender.com";
 
 /**
  * Dev: empty → relative /api URLs, Vite proxies to localhost:3000.

@@ -9,7 +9,6 @@ import Footer from './components/Footer'
 import { Toaster } from "sonner"
 import AuthPage from './Pages/auth/authpage'
 import Settings from './Pages/Setting'
-import ConnectionDebug from './components/ConnectionDebug'
 
 const App = () => {
   const { pathname } = useLocation()
@@ -33,7 +32,6 @@ const App = () => {
         <Route path="/account/settings" element={<Settings />} />
       </Routes>
       {!hideShell && <Footer />}
-      <ConnectionDebug />
     </>
   )
 }
