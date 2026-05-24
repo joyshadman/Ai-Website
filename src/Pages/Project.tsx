@@ -165,8 +165,8 @@ const ProjectCard: React.FC<ProjectData & { onDelete: (id: string) => void }> = 
               </p>
             </div>
             <span className={`ml-2 shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border flex items-center gap-1 ${isPublished
-                ? "border-green-500/30 bg-green-500/10 text-green-400"
-                : "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+              ? "border-green-500/30 bg-green-500/10 text-green-400"
+              : "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
               }`}>
               {isPublished ? <Globe className="w-2.5 h-2.5" /> : <GlobeLock className="w-2.5 h-2.5" />}
               {isPublished ? "Live" : "Draft"}
@@ -199,9 +199,9 @@ const ProjectPage: React.FC = () => {
     setLoading(true);
     try {
       const { data } = await api.get<{ projects: ProjectData[] }>("/api/user/projects");
-      setProjects(data.projects);
+      setProjects(data.projects ?? []);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      setProjects([]);
     } finally {
       setLoading(false);
     }

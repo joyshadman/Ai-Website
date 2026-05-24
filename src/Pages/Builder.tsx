@@ -4,6 +4,7 @@ import {
   Send, Monitor, Tablet, Smartphone, Code2, Eye,
   RotateCcw, Save, Globe, GlobeLock, Loader2,
   Sparkles, Check, Copy, Download, RefreshCw, ArrowLeft, Clock,
+  Zap, AlertTriangle, X,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
@@ -43,8 +44,9 @@ type Tab    = "chat" | "versions";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL = 3000;
-const TIMEOUT_HARD  = 180;
+const POLL_INTERVAL  = 3000;
+const TIMEOUT_HARD   = 180;
+const EDIT_COST      = 5; // credits per edit/revision
 
 const DEVICE_WIDTH: Record<Device, string> = {
   desktop: "100%",
@@ -53,8 +55,6 @@ const DEVICE_WIDTH: Record<Device, string> = {
 };
 
 // ─── Timer localStorage helpers ────────────────────────────────────────────────
-// We persist { startedAt: number } so the elapsed time is always wall-clock
-// accurate even after the user navigates away and comes back.
 
 const timerKey = (projectId: string) => `builder_timer_${projectId}`;
 
@@ -93,39 +93,27 @@ const apiError = (error: any): string =>
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
-/**
- * Elapsed timer backed by localStorage so it survives navigation.
- * - On mount (generating=true): resumes from persisted startedAt, or starts fresh.
- * - When generating flips false: clears localStorage and resets to 0.
- */
 function usePersistedTimer(projectId: string | undefined, generating: boolean) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (!projectId) return;
-
     if (!generating) {
       clearPersistedTimer(projectId);
       setElapsed(0);
       return;
     }
-
-    // Ensure a start timestamp exists (idempotent)
     startPersistedTimer(projectId);
-
-    // Sync elapsed immediately, then tick every second
     setElapsed(getPersistedElapsed(projectId) ?? 0);
     const id = setInterval(() => {
       setElapsed(getPersistedElapsed(projectId) ?? 0);
     }, 1000);
-
     return () => clearInterval(id);
   }, [generating, projectId]);
 
   return elapsed;
 }
 
-/** Runs `fn` on an interval while `active`. Uses a ref so fn is always fresh. */
 function useInterval(fn: () => void, ms: number, active: boolean) {
   const fnRef = useRef(fn);
   fnRef.current = fn;
@@ -136,7 +124,6 @@ function useInterval(fn: () => void, ms: number, active: boolean) {
   }, [active, ms]);
 }
 
-/** Auto-scrolls a ref to bottom whenever deps change. */
 function useScrollToBottom<T extends HTMLElement>(
   ref: React.RefObject<T | null>,
   deps: any[],
@@ -145,6 +132,92 @@ function useScrollToBottom<T extends HTMLElement>(
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
+
+// ─── Credit Confirm Dialog ─────────────────────────────────────────────────────
+
+const CreditConfirmDialog: React.FC<{
+  credits: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ credits, onConfirm, onCancel }) => {
+  const insufficient = credits < EDIT_COST;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onCancel}
+      >
+        <motion.div
+          className="relative bg-[#0e0e14] border border-white/10 rounded-2xl p-6 w-80 shadow-2xl"
+          initial={{ scale: 0.92, opacity: 0, y: 16 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.92, opacity: 0, y: 16 }}
+          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close */}
+          <button
+            onClick={onCancel}
+            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Icon */}
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+            insufficient
+              ? "bg-red-500/10 border border-red-500/20"
+              : "bg-purple-500/10 border border-purple-500/20"
+          }`}>
+            {insufficient
+              ? <AlertTriangle className="w-5 h-5 text-red-400" />
+              : <Zap className="w-5 h-5 text-purple-400" />}
+          </div>
+
+          <h3 className="text-white font-semibold text-sm mb-1">
+            {insufficient ? "Not enough credits" : "This will use credits"}
+          </h3>
+
+          {insufficient ? (
+            <p className="text-gray-400 text-xs leading-relaxed mb-5">
+              You need <span className="text-white font-semibold">{EDIT_COST} credits</span> to make
+              an edit, but you only have{" "}
+              <span className="text-red-400 font-semibold">{credits}</span>.
+            </p>
+          ) : (
+            <p className="text-gray-400 text-xs leading-relaxed mb-5">
+              Making this edit will cost{" "}
+              <span className="text-purple-300 font-semibold">{EDIT_COST} credits</span>. You
+              currently have{" "}
+              <span className="text-white font-semibold">{credits} credits</span> remaining.
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
+            >
+              Cancel
+            </button>
+            {!insufficient && (
+              <button
+                onClick={onConfirm}
+                className="flex-1 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all"
+              >
+                Confirm · {EDIT_COST} credits
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -221,12 +294,8 @@ const VersionItem: React.FC<{
 
 // ─── Generating Panel ──────────────────────────────────────────────────────────
 
-const GeneratingPanel: React.FC<{
-  elapsed: number;
-  timedOut: boolean;
-}> = ({ elapsed, timedOut }) => (
+const GeneratingPanel: React.FC<{ elapsed: number; timedOut: boolean }> = ({ elapsed, timedOut }) => (
   <div className="flex flex-col items-center justify-center h-full gap-6">
-    {/* Icon */}
     {timedOut ? (
       <div className="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
         <Clock className="w-9 h-9 text-red-400" />
@@ -243,8 +312,6 @@ const GeneratingPanel: React.FC<{
         />
       </div>
     )}
-
-    {/* Title + timer */}
     <div className="text-center">
       <p className="text-white font-semibold mb-3">
         {timedOut ? "Generation timed out" : "Building your website..."}
@@ -261,8 +328,6 @@ const GeneratingPanel: React.FC<{
         </p>
       )}
     </div>
-
-    {/* Progress dots — hidden when timed out */}
     {!timedOut && (
       <div className="flex gap-1.5">
         {[0, 1, 2, 3].map((i) => (
@@ -278,15 +343,11 @@ const GeneratingPanel: React.FC<{
   </div>
 );
 
-// ─── Shared full-screen wrapper ────────────────────────────────────────────────
-
 const CenteredScreen: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="min-h-screen bg-[#030303] flex items-center justify-center">
     {children}
   </div>
 );
-
-// ─── Device icon map ───────────────────────────────────────────────────────────
 
 const DeviceIcon: Record<Device, React.ReactNode> = {
   desktop: <Monitor    className="w-4 h-4" />,
@@ -301,31 +362,40 @@ const Builder: React.FC = () => {
   const navigate      = useNavigate();
   const { data: session } = authClient.useSession();
 
-  const [project,    setProject]    = useState<Project | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [timedOut,   setTimedOut]   = useState(false);
-  const [message,    setMessage]    = useState("");
-  const [sending,    setSending]    = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [rolling,    setRolling]    = useState(false);
-  const [showCode,   setShowCode]   = useState(false);
-  const [copied,     setCopied]     = useState(false);
-  const [device,     setDevice]     = useState<Device>("desktop");
-  const [activeTab,  setActiveTab]  = useState<Tab>("chat");
+  const [project,       setProject]       = useState<Project | null>(null);
+  const [credits,       setCredits]       = useState<number>(0);
+  const [loading,       setLoading]       = useState(true);
+  const [generating,    setGenerating]    = useState(false);
+  const [timedOut,      setTimedOut]      = useState(false);
+  const [message,       setMessage]       = useState("");
+  const [sending,       setSending]       = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [publishing,    setPublishing]    = useState(false);
+  const [rolling,       setRolling]       = useState(false);
+  const [showCode,      setShowCode]      = useState(false);
+  const [copied,        setCopied]        = useState(false);
+  const [device,        setDevice]        = useState<Device>("desktop");
+  const [activeTab,     setActiveTab]     = useState<Tab>("chat");
+  // Pending message waiting for credit confirmation
+  const [pendingMsg,    setPendingMsg]    = useState<string | null>(null);
 
   const chatRef = useRef<HTMLDivElement>(null);
-
-  // Persisted timer — resumes correctly after navigation
   const elapsed = usePersistedTimer(projectId, generating);
 
-  // Hard timeout at TIMEOUT_HARD seconds
   useEffect(() => {
     if (elapsed >= TIMEOUT_HARD) setTimedOut(true);
   }, [elapsed]);
 
-  // ── Fetch project ────────────────────────────────────────────────────────────
+  // ── Fetch project + credits ──────────────────────────────────────────────────
+
+  const fetchCredits = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ credits: number }>("/api/user/credit");
+      setCredits(data.credits ?? 0);
+    } catch {
+      // silently fail — credits displayed as 0
+    }
+  }, []);
 
   const fetchProject = useCallback(async (silent = false) => {
     if (!projectId) return;
@@ -333,14 +403,11 @@ const Builder: React.FC = () => {
     try {
       const { data } = await api.get<{ project: Project }>(`/api/user/project/${projectId}`);
       setProject(data.project);
-
       if (data.project.current_code) {
-        // Build finished — clear timer from localStorage
         clearPersistedTimer(projectId);
         setGenerating(false);
         setTimedOut(false);
       } else {
-        // Still building — ensure timer is persisted
         startPersistedTimer(projectId);
         setGenerating(true);
       }
@@ -351,22 +418,30 @@ const Builder: React.FC = () => {
     }
   }, [projectId]);
 
-  // Initial load
-  useEffect(() => { fetchProject(); }, [fetchProject]);
+  useEffect(() => {
+    fetchProject();
+    fetchCredits();
+  }, [fetchProject, fetchCredits]);
 
-  // Poll while generating and not timed out
   useInterval(() => fetchProject(true), POLL_INTERVAL, generating && !timedOut);
-
-  // Auto-scroll chat
   useScrollToBottom(chatRef, [project?.conversation, sending]);
 
-  // ── Send revision ────────────────────────────────────────────────────────────
+  // ── Send revision (after credit confirmation) ────────────────────────────────
 
-  const sendMessage = async () => {
+  /**
+   * Step 1 — user hits Send: show the credit confirmation dialog.
+   * Step 2 — user confirms: actually fire the API call.
+   */
+  const handleSendClick = () => {
     if (!message.trim() || sending || generating) return;
-    if (!session?.user) return toast.error("Please sign in");
+    if (!session?.user) return void toast.error("Please sign in");
+    setPendingMsg(message.trim());
+  };
 
-    const trimmed = message.trim();
+  const confirmSend = async () => {
+    if (!pendingMsg) return;
+    const trimmed = pendingMsg;
+    setPendingMsg(null);
     setSending(true);
     setMessage("");
 
@@ -384,8 +459,9 @@ const Builder: React.FC = () => {
     );
 
     try {
-      await api.post(`/api/project/${projectId}/revision`, { message: trimmed });
-      // Start a fresh timer for this new generation
+      await api.post(`/api/project/edit/${projectId}`, { message: trimmed });
+      // Deduct locally so UI is instant (server already deducted)
+      setCredits((c) => Math.max(0, c - EDIT_COST));
       if (projectId) {
         clearPersistedTimer(projectId);
         startPersistedTimer(projectId);
@@ -399,10 +475,12 @@ const Builder: React.FC = () => {
     }
   };
 
+  const cancelSend = () => setPendingMsg(null);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendClick();
     }
   };
 
@@ -487,10 +565,7 @@ const Builder: React.FC = () => {
       <CenteredScreen>
         <div className="text-center">
           <p className="text-gray-400 mb-4">Project not found.</p>
-          <button
-            onClick={() => navigate("/project")}
-            className="text-purple-400 hover:underline text-sm"
-          >
+          <button onClick={() => navigate("/project")} className="text-purple-400 hover:underline text-sm">
             ← Back to projects
           </button>
         </div>
@@ -502,6 +577,15 @@ const Builder: React.FC = () => {
 
   return (
     <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden font-sans">
+
+      {/* Credit confirm dialog */}
+      {pendingMsg !== null && (
+        <CreditConfirmDialog
+          credits={credits}
+          onConfirm={confirmSend}
+          onCancel={cancelSend}
+        />
+      )}
 
       {/* ── Top Bar ── */}
       <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 shrink-0 bg-black/40 backdrop-blur-xl">
@@ -554,8 +638,21 @@ const Builder: React.FC = () => {
           ))}
         </div>
 
-        {/* Right: actions */}
+        {/* Right: credits + actions */}
         <div className="flex items-center gap-1.5">
+
+          {/* ── Credit badge ── */}
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors ${
+            credits < EDIT_COST
+              ? "bg-red-500/10 border-red-500/20 text-red-400"
+              : credits < 20
+              ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+              : "bg-purple-500/10 border-purple-500/20 text-purple-300"
+          }`}>
+            <Zap className="w-3.5 h-3.5" />
+            <span>{credits}</span>
+          </div>
+
           <button
             onClick={() => setShowCode((v) => !v)}
             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
@@ -679,6 +776,16 @@ const Builder: React.FC = () => {
                       <span className="font-mono ml-auto">{fmtTime(elapsed)}</span>
                     </div>
                   )}
+
+                  {/* Credit cost hint */}
+                  {!generating && (
+                    <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-500">
+                      <Zap className="w-3 h-3" />
+                      <span>Each edit costs <span className="text-purple-400 font-semibold">{EDIT_COST} credits</span></span>
+                      <span className="ml-auto">You have <span className={credits < EDIT_COST ? "text-red-400" : "text-white"} >{credits}</span></span>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 items-end bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-purple-500/40 transition-colors">
                     <textarea
                       value={message}
@@ -690,7 +797,7 @@ const Builder: React.FC = () => {
                       className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none resize-none disabled:opacity-50"
                     />
                     <button
-                      onClick={sendMessage}
+                      onClick={handleSendClick}
                       disabled={!message.trim() || sending || generating}
                       className="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors shrink-0"
                     >
@@ -731,8 +838,6 @@ const Builder: React.FC = () => {
 
         {/* ── Right Panel ── */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#050505]">
-
-          {/* Preview toolbar */}
           <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Eye className="w-3.5 h-3.5" />
@@ -748,7 +853,6 @@ const Builder: React.FC = () => {
             )}
           </div>
 
-          {/* Preview area */}
           <div className="flex-1 overflow-auto flex items-start justify-center p-4 bg-[#060606]">
             {generating && !project.current_code ? (
               <GeneratingPanel elapsed={elapsed} timedOut={timedOut} />

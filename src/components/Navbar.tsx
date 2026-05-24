@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
             <img src={Logo} alt="Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-white font-bold text-xl md:text-2xl tracking-tight">
-            Apexium AI<span className="text-purple-500">.</span>
+            Apexium Ai Studio<span className="text-purple-500">.</span>
           </span>
         </Link>
 
