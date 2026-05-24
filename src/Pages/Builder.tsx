@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Monitor, Tablet, Smartphone, Code2, Eye,
   RotateCcw, Save, Globe, GlobeLock, Loader2,
-  Sparkles, Check, Copy, Download, RefreshCw, ArrowLeft,
-  Terminal, Clock
+  Sparkles, Check, Copy, Download, RefreshCw, ArrowLeft, Clock,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import api from "@/configs/axios.ts";
 import { toast } from "sonner";
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface Message {
   id: string;
@@ -38,21 +39,116 @@ interface Project {
 }
 
 type Device = "desktop" | "tablet" | "phone";
-type Tab = "chat" | "versions";
+type Tab    = "chat" | "versions";
 
-const deviceWidth: Record<Device, string> = {
-  desktop: "100%",
-  tablet: "768px",
-  phone: "390px",
-};
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const POLL_INTERVAL = 3000;
-const TIMEOUT_WARN = 60;   // warn at 60s
-const TIMEOUT_HARD = 180;  // give up at 3min
+const TIMEOUT_HARD  = 180;
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const DEVICE_WIDTH: Record<Device, string> = {
+  desktop: "100%",
+  tablet:  "768px",
+  phone:   "390px",
+};
 
-const TypingDots = () => (
+// ─── Timer localStorage helpers ────────────────────────────────────────────────
+// We persist { startedAt: number } so the elapsed time is always wall-clock
+// accurate even after the user navigates away and comes back.
+
+const timerKey = (projectId: string) => `builder_timer_${projectId}`;
+
+function startPersistedTimer(projectId: string) {
+  const existing = localStorage.getItem(timerKey(projectId));
+  if (!existing) {
+    localStorage.setItem(timerKey(projectId), JSON.stringify({ startedAt: Date.now() }));
+  }
+}
+
+function clearPersistedTimer(projectId: string) {
+  localStorage.removeItem(timerKey(projectId));
+}
+
+function getPersistedElapsed(projectId: string): number | null {
+  const raw = localStorage.getItem(timerKey(projectId));
+  if (!raw) return null;
+  try {
+    const { startedAt } = JSON.parse(raw) as { startedAt: number };
+    return Math.floor((Date.now() - startedAt) / 1000);
+  } catch {
+    return null;
+  }
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+const fmtTime = (s: number) =>
+  `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
+const apiError = (error: any): string =>
+  error?.response?.data?.error   ||
+  error?.response?.data?.message ||
+  error?.message                 ||
+  "Unknown error";
+
+// ─── Hooks ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Elapsed timer backed by localStorage so it survives navigation.
+ * - On mount (generating=true): resumes from persisted startedAt, or starts fresh.
+ * - When generating flips false: clears localStorage and resets to 0.
+ */
+function usePersistedTimer(projectId: string | undefined, generating: boolean) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    if (!generating) {
+      clearPersistedTimer(projectId);
+      setElapsed(0);
+      return;
+    }
+
+    // Ensure a start timestamp exists (idempotent)
+    startPersistedTimer(projectId);
+
+    // Sync elapsed immediately, then tick every second
+    setElapsed(getPersistedElapsed(projectId) ?? 0);
+    const id = setInterval(() => {
+      setElapsed(getPersistedElapsed(projectId) ?? 0);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [generating, projectId]);
+
+  return elapsed;
+}
+
+/** Runs `fn` on an interval while `active`. Uses a ref so fn is always fresh. */
+function useInterval(fn: () => void, ms: number, active: boolean) {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => fnRef.current(), ms);
+    return () => clearInterval(id);
+  }, [active, ms]);
+}
+
+/** Auto-scrolls a ref to bottom whenever deps change. */
+function useScrollToBottom<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  deps: any[],
+) {
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+const TypingDots: React.FC = () => (
   <div className="flex items-center gap-1 px-4 py-3">
     {[0, 1, 2].map((i) => (
       <motion.span
@@ -76,10 +172,11 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => (
         <Sparkles className="w-3.5 h-3.5 text-purple-400" />
       </div>
     )}
-    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === "user"
+    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+      msg.role === "user"
         ? "bg-purple-600/30 border border-purple-500/30 text-white rounded-tr-sm"
         : "bg-white/5 border border-white/10 text-gray-300 rounded-tl-sm"
-      }`}>
+    }`}>
       {msg.content}
     </div>
   </motion.div>
@@ -91,10 +188,11 @@ const VersionItem: React.FC<{
   onRollback: (id: string) => void;
   rolling: boolean;
 }> = ({ version, isCurrent, onRollback, rolling }) => (
-  <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${isCurrent
+  <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${
+    isCurrent
       ? "border-purple-500/40 bg-purple-500/10"
       : "border-white/5 bg-white/[0.02] hover:border-white/10"
-    }`}>
+  }`}>
     <div className="flex-1 min-w-0">
       <p className="text-xs text-white font-medium truncate">{version.description}</p>
       <p className="text-[10px] text-gray-500 mt-0.5">
@@ -121,276 +219,148 @@ const VersionItem: React.FC<{
   </div>
 );
 
-// ─── Generation Progress Panel ─────────────────────────────────────────────────
-
-interface LogEntry {
-  time: number;
-  msg: string;
-  type: "info" | "warn" | "success" | "error";
-}
+// ─── Generating Panel ──────────────────────────────────────────────────────────
 
 const GeneratingPanel: React.FC<{
   elapsed: number;
-  logs: LogEntry[];
-  logsRef: React.RefObject<HTMLDivElement | null>;
-  onRetry: () => void;
   timedOut: boolean;
-}> = ({ elapsed, logs, logsRef, onRetry, timedOut }) => {
-  const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
-  const isWarning = elapsed >= TIMEOUT_WARN;
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 w-full max-w-lg mx-auto px-4">
-      {/* Animated icon */}
-      {!timedOut ? (
-        <div className="relative">
-          <div className="w-20 h-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-            <Sparkles className="w-9 h-9 text-purple-400" />
-          </div>
-          <motion.div
-            className="absolute inset-0 rounded-3xl border border-purple-500/30"
-            animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
+}> = ({ elapsed, timedOut }) => (
+  <div className="flex flex-col items-center justify-center h-full gap-6">
+    {/* Icon */}
+    {timedOut ? (
+      <div className="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+        <Clock className="w-9 h-9 text-red-400" />
+      </div>
+    ) : (
+      <div className="relative">
+        <div className="w-20 h-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+          <Sparkles className="w-9 h-9 text-purple-400" />
         </div>
-      ) : (
-        <div className="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-          <Clock className="w-9 h-9 text-red-400" />
-        </div>
-      )}
+        <motion.div
+          className="absolute inset-0 rounded-3xl border border-purple-500/30"
+          animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </div>
+    )}
 
-      {/* Title + timer */}
-      <div className="text-center">
-        <p className="text-white font-semibold mb-1">
-          {timedOut ? "Generation timed out" : "Building your website..."}
+    {/* Title + timer */}
+    <div className="text-center">
+      <p className="text-white font-semibold mb-3">
+        {timedOut ? "Generation timed out" : "Building your website..."}
+      </p>
+      <div className={`flex items-center justify-center gap-2 text-3xl font-mono font-bold tabular-nums ${
+        timedOut ? "text-red-400" : "text-purple-300"
+      }`}>
+        <Clock className="w-6 h-6" />
+        {fmtTime(elapsed)}
+      </div>
+      {timedOut && (
+        <p className="text-gray-500 text-xs mt-3 max-w-xs">
+          The model may be overloaded. Please try again later.
         </p>
-        <div className={`flex items-center justify-center gap-2 text-sm font-mono ${timedOut ? "text-red-400" : isWarning ? "text-yellow-400" : "text-gray-400"
-          }`}>
-          <Clock className="w-3.5 h-3.5" />
-          {fmt(elapsed)}
-          {isWarning && !timedOut && (
-            <span className="text-yellow-400 text-xs">(taking longer than usual)</span>
-          )}
-        </div>
-        {timedOut && (
-          <p className="text-gray-500 text-xs mt-2">
-            The model may be overloaded. Try again or switch to a faster model.
-          </p>
-        )}
-      </div>
-
-      {/* Progress dots */}
-      {!timedOut && (
-        <div className="flex gap-1.5">
-          {[0, 1, 2, 3].map((i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 rounded-full bg-purple-500"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Live log terminal */}
-      <div className="w-full bg-black/60 border border-white/10 rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 bg-white/[0.02]">
-          <Terminal className="w-3.5 h-3.5 text-gray-500" />
-          <span className="text-xs text-gray-500 font-mono">generation log</span>
-          <span className="ml-auto text-[10px] font-mono text-gray-600">
-            polling every {POLL_INTERVAL / 1000}s
-          </span>
-        </div>
-        <div
-          ref={logsRef}
-          className="h-40 overflow-y-auto p-3 space-y-1 font-mono text-[11px]"
-          style={{ scrollbarWidth: "thin" }}
-        >
-          {logs.map((log, i) => (
-            <div key={i} className={`flex gap-2 ${log.type === "error" ? "text-red-400"
-                : log.type === "warn" ? "text-yellow-400"
-                  : log.type === "success" ? "text-green-400"
-                    : "text-gray-400"
-              }`}>
-              <span className="text-gray-600 shrink-0">[{fmt(log.time)}]</span>
-              <span>{log.msg}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Retry button */}
-      {(timedOut || isWarning) && (
-        <button
-          onClick={onRetry}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-300 text-sm font-semibold hover:bg-purple-600/50 transition-all"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry
-        </button>
       )}
     </div>
-  );
+
+    {/* Progress dots — hidden when timed out */}
+    {!timedOut && (
+      <div className="flex gap-1.5">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 rounded-full bg-purple-500"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// ─── Shared full-screen wrapper ────────────────────────────────────────────────
+
+const CenteredScreen: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="min-h-screen bg-[#030303] flex items-center justify-center">
+    {children}
+  </div>
+);
+
+// ─── Device icon map ───────────────────────────────────────────────────────────
+
+const DeviceIcon: Record<Device, React.ReactNode> = {
+  desktop: <Monitor    className="w-4 h-4" />,
+  tablet:  <Tablet     className="w-4 h-4" />,
+  phone:   <Smartphone className="w-4 h-4" />,
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const Builder: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
   const { data: session } = authClient.useSession();
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [project,    setProject]    = useState<Project | null>(null);
+  const [loading,    setLoading]    = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [device, setDevice] = useState<Device>("desktop");
-  const [activeTab, setActiveTab] = useState<Tab>("chat");
-  const [saving, setSaving] = useState(false);
+  const [timedOut,   setTimedOut]   = useState(false);
+  const [message,    setMessage]    = useState("");
+  const [sending,    setSending]    = useState(false);
+  const [saving,     setSaving]     = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [rolling, setRolling] = useState(false);
-  const [showCode, setShowCode] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Timer & logs
-  const [elapsed, setElapsed] = useState(0);
-  const [timedOut, setTimedOut] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const logsRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollCountRef = useRef(0);
+  const [rolling,    setRolling]    = useState(false);
+  const [showCode,   setShowCode]   = useState(false);
+  const [copied,     setCopied]     = useState(false);
+  const [device,     setDevice]     = useState<Device>("desktop");
+  const [activeTab,  setActiveTab]  = useState<Tab>("chat");
 
   const chatRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const addLog = useCallback((msg: string, type: LogEntry["type"] = "info") => {
-    console.log(`[Builder][${type.toUpperCase()}] ${msg}`);
-    setLogs((prev) => [...prev, { time: elapsed, msg, type }]);
-    setTimeout(() => {
-      if (logsRef.current) {
-        logsRef.current.scrollTop = logsRef.current.scrollHeight;
-      }
-    }, 50);
+  // Persisted timer — resumes correctly after navigation
+  const elapsed = usePersistedTimer(projectId, generating);
+
+  // Hard timeout at TIMEOUT_HARD seconds
+  useEffect(() => {
+    if (elapsed >= TIMEOUT_HARD) setTimedOut(true);
   }, [elapsed]);
 
-  // Start/stop timer when generating changes
-  useEffect(() => {
-    if (generating) {
-      setElapsed(0);
-      setTimedOut(false);
-      pollCountRef.current = 0;
-      timerRef.current = setInterval(() => {
-        setElapsed((e) => {
-          const next = e + 1;
-          if (next === TIMEOUT_WARN) {
-            console.warn("[Builder] Generation taking longer than expected:", next, "s");
-          }
-          if (next >= TIMEOUT_HARD) {
-            setTimedOut(true);
-          }
-          return next;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+  // ── Fetch project ────────────────────────────────────────────────────────────
+
+  const fetchProject = useCallback(async (silent = false) => {
+    if (!projectId) return;
+    if (!silent) setLoading(true);
+    try {
+      const { data } = await api.get<{ project: Project }>(`/api/user/project/${projectId}`);
+      setProject(data.project);
+
+      if (data.project.current_code) {
+        // Build finished — clear timer from localStorage
+        clearPersistedTimer(projectId);
+        setGenerating(false);
+        setTimedOut(false);
+      } else {
+        // Still building — ensure timer is persisted
+        startPersistedTimer(projectId);
+        setGenerating(true);
       }
+    } catch (error: any) {
+      if (!silent) toast.error(apiError(error));
+    } finally {
+      if (!silent) setLoading(false);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [generating]);
+  }, [projectId]);
 
-  // ── Fetch project ──────────────────────────────────────────────────────────
+  // Initial load
+  useEffect(() => { fetchProject(); }, [fetchProject]);
 
-  const fetchProject = useCallback(
-    async (silent = false) => {
-      if (!projectId) return;
-      if (!silent) setLoading(true);
-      try {
-        pollCountRef.current += 1;
-        const pollNum = pollCountRef.current;
-
-        if (silent) {
-          console.log(`[Builder] Poll #${pollNum} — checking generation status...`);
-        }
-
-        const { data } = await api.get<{ project: Project }>(
-          `/api/user/project/${projectId}`
-        );
-        setProject(data.project);
-
-        if (!data.project.current_code) {
-          setGenerating(true);
-          if (silent) {
-            addLog(`Poll #${pollNum} — still generating, no code yet`, "info");
-          }
-        } else {
-          const wasGenerating = generating;
-          setGenerating(false);
-          setTimedOut(false);
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-          if (wasGenerating || silent) {
-            addLog(`Code ready! ${data.project.current_code.length} chars received`, "success");
-            console.log("[Builder] ✅ Generation complete. Code length:", data.project.current_code.length);
-          }
-        }
-      } catch (error: any) {
-        const msg = error?.response?.data?.message || error.message;
-        addLog(`Poll failed: ${msg}`, "error");
-        console.error("[Builder] ❌ Fetch error:", error);
-        if (!silent) toast.error(msg);
-      } finally {
-        if (!silent) setLoading(false);
-      }
-    },
-    [projectId, generating, addLog]
-  );
-
-  useEffect(() => {
-    addLog("Project loaded, fetching data...", "info");
-    fetchProject();
-  }, []);
-
-  // Poll while generating
-  useEffect(() => {
-    if (generating && !pollRef.current) {
-      addLog(`Starting polling every ${POLL_INTERVAL / 1000}s...`, "info");
-      pollRef.current = setInterval(() => fetchProject(true), POLL_INTERVAL);
-    }
-    if (!generating && pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
-  }, [generating, fetchProject]);
+  // Poll while generating and not timed out
+  useInterval(() => fetchProject(true), POLL_INTERVAL, generating && !timedOut);
 
   // Auto-scroll chat
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [project?.conversation]);
+  useScrollToBottom(chatRef, [project?.conversation, sending]);
 
-  // Auto-scroll logs
-  useEffect(() => {
-    if (logsRef.current) {
-      logsRef.current.scrollTop = logsRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  // ── Send revision ──────────────────────────────────────────────────────────
+  // ── Send revision ────────────────────────────────────────────────────────────
 
   const sendMessage = async () => {
     if (!message.trim() || sending || generating) return;
@@ -399,8 +369,8 @@ const Builder: React.FC = () => {
     const trimmed = message.trim();
     setSending(true);
     setMessage("");
-    setLogs([]);
 
+    // Optimistic user bubble
     setProject((prev) =>
       prev ? {
         ...prev,
@@ -414,17 +384,16 @@ const Builder: React.FC = () => {
     );
 
     try {
-      addLog("Sending revision request...", "info");
       await api.post(`/api/project/${projectId}/revision`, { message: trimmed });
-      addLog("Revision request accepted, generation started", "success");
-      setGenerating(true);
-      if (!pollRef.current) {
-        pollRef.current = setInterval(() => fetchProject(true), POLL_INTERVAL);
+      // Start a fresh timer for this new generation
+      if (projectId) {
+        clearPersistedTimer(projectId);
+        startPersistedTimer(projectId);
       }
+      setTimedOut(false);
+      setGenerating(true);
     } catch (error: any) {
-      const msg = error?.response?.data?.error || error?.response?.data?.message || error.message;
-      addLog(`Request failed: ${msg}`, "error");
-      toast.error(msg);
+      toast.error(apiError(error));
     } finally {
       setSending(false);
     }
@@ -437,19 +406,7 @@ const Builder: React.FC = () => {
     }
   };
 
-  const handleRetry = () => {
-    setTimedOut(false);
-    setElapsed(0);
-    setLogs([]);
-    pollCountRef.current = 0;
-    addLog("Retrying — restarting polling...", "warn");
-    fetchProject(true);
-    if (!pollRef.current) {
-      pollRef.current = setInterval(() => fetchProject(true), POLL_INTERVAL);
-    }
-  };
-
-  // ── Save ───────────────────────────────────────────────────────────────────
+  // ── CRUD actions ─────────────────────────────────────────────────────────────
 
   const saveCode = async () => {
     if (!project?.current_code) return;
@@ -458,13 +415,11 @@ const Builder: React.FC = () => {
       await api.put(`/api/project/${projectId}/save`, { code: project.current_code });
       toast.success("Project saved!");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      toast.error(apiError(error));
     } finally {
       setSaving(false);
     }
   };
-
-  // ── Publish toggle ─────────────────────────────────────────────────────────
 
   const togglePublish = async () => {
     if (!project) return;
@@ -475,13 +430,11 @@ const Builder: React.FC = () => {
       setProject((prev) => prev ? { ...prev, isPublished: nowPublished } : prev);
       toast.success(nowPublished ? "Project published!" : "Project unpublished");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      toast.error(apiError(error));
     } finally {
       setPublishing(false);
     }
   };
-
-  // ── Rollback ───────────────────────────────────────────────────────────────
 
   const rollback = async (versionId: string) => {
     setRolling(true);
@@ -490,13 +443,11 @@ const Builder: React.FC = () => {
       await fetchProject(true);
       toast.success("Rolled back successfully!");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      toast.error(apiError(error));
     } finally {
       setRolling(false);
     }
   };
-
-  // ── Copy / Download ────────────────────────────────────────────────────────
 
   const copyCode = () => {
     if (!project?.current_code) return;
@@ -508,52 +459,54 @@ const Builder: React.FC = () => {
   const downloadCode = () => {
     if (!project?.current_code) return;
     const blob = new Blob([project.current_code], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
     a.download = `${project.name || "website"}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // ─── Loading / error states ────────────────────────────────────────────────
+  // ─── Loading / not found ─────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#030303] flex items-center justify-center">
+      <CenteredScreen>
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
           </div>
-          <p className="text-gray-500 text-sm">Loading project...</p>
+          <p className="text-gray-500 text-sm">Loading project…</p>
         </div>
-      </div>
+      </CenteredScreen>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#030303] flex items-center justify-center">
+      <CenteredScreen>
         <div className="text-center">
           <p className="text-gray-400 mb-4">Project not found.</p>
-          <button onClick={() => navigate("/project")} className="text-purple-400 hover:underline text-sm">
+          <button
+            onClick={() => navigate("/project")}
+            className="text-purple-400 hover:underline text-sm"
+          >
             ← Back to projects
           </button>
         </div>
-      </div>
+      </CenteredScreen>
     );
   }
 
-  const fmt = (s: number) =>
-    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden font-sans">
+
       {/* ── Top Bar ── */}
       <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 shrink-0 bg-black/40 backdrop-blur-xl">
-        {/* Left */}
+
+        {/* Left: back + project name + status */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate("/project")}
@@ -565,11 +518,11 @@ const Builder: React.FC = () => {
             <p className="text-sm font-semibold text-white truncate max-w-[160px] md:max-w-[240px]">
               {project.name}
             </p>
-            <p className="text-[10px] text-gray-500 flex items-center gap-1">
+            <p className="text-[10px] flex items-center gap-1">
               {generating ? (
                 <>
                   <Loader2 className="w-2.5 h-2.5 animate-spin text-purple-400" />
-                  <span className="text-purple-400">Generating... {fmt(elapsed)}</span>
+                  <span className="text-purple-400 font-mono">{fmtTime(elapsed)}</span>
                 </>
               ) : timedOut ? (
                 <>
@@ -579,87 +532,104 @@ const Builder: React.FC = () => {
               ) : (
                 <>
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                  Ready
+                  <span className="text-gray-500">Ready</span>
                 </>
               )}
             </p>
           </div>
         </div>
 
-        {/* Center — device switcher */}
+        {/* Center: device switcher */}
         <div className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
           {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
             <button
               key={d}
               onClick={() => setDevice(d)}
-              className={`p-2 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"
-                }`}
+              className={`p-2 rounded-lg transition-all ${
+                device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"
+              }`}
             >
-              {d === "desktop" ? <Monitor className="w-4 h-4" />
-                : d === "tablet" ? <Tablet className="w-4 h-4" />
-                  : <Smartphone className="w-4 h-4" />}
+              {DeviceIcon[d]}
             </button>
           ))}
         </div>
 
-        {/* Right */}
+        {/* Right: actions */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowCode((v) => !v)}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${showCode
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+              showCode
                 ? "bg-purple-500/20 border-purple-500/30 text-purple-300"
                 : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-              }`}
+            }`}
           >
             <Code2 className="w-3.5 h-3.5" /> Code
           </button>
 
-          <button onClick={copyCode} disabled={!project.current_code}
+          <button
+            onClick={copyCode}
+            disabled={!project.current_code}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all disabled:opacity-30"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
-          <button onClick={downloadCode} disabled={!project.current_code}
+          <button
+            onClick={downloadCode}
+            disabled={!project.current_code}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all disabled:opacity-30"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
 
-          <button onClick={saveCode} disabled={saving || !project.current_code}
+          <button
+            onClick={saveCode}
+            disabled={saving || !project.current_code}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all disabled:opacity-30"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">Save</span>
           </button>
 
-          <button onClick={togglePublish} disabled={publishing || !project.current_code}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 ${project.isPublished
+          <button
+            onClick={togglePublish}
+            disabled={publishing || !project.current_code}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 ${
+              project.isPublished
                 ? "bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
                 : "bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:bg-purple-600/50"
-              }`}
+            }`}
           >
-            {publishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : project.isPublished ? <Globe className="w-3.5 h-3.5" />
+            {publishing
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : project.isPublished
+                ? <Globe    className="w-3.5 h-3.5" />
                 : <GlobeLock className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{project.isPublished ? "Published" : "Publish"}</span>
+            <span className="hidden sm:inline">
+              {project.isPublished ? "Published" : "Publish"}
+            </span>
           </button>
         </div>
       </div>
 
       {/* ── Main Layout ── */}
       <div className="flex flex-1 overflow-hidden">
+
         {/* ── Left Panel ── */}
         <div className="w-80 shrink-0 border-r border-white/5 flex flex-col bg-black/20">
+
+          {/* Tabs */}
           <div className="flex border-b border-white/5 shrink-0">
             {(["chat", "versions"] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+                  activeTab === tab
                     ? "text-purple-400 border-b-2 border-purple-500"
                     : "text-gray-500 hover:text-gray-300"
-                  }`}
+                }`}
               >
                 {tab === "chat" ? "Chat" : "History"}
               </button>
@@ -668,10 +638,17 @@ const Builder: React.FC = () => {
 
           <AnimatePresence mode="wait">
             {activeTab === "chat" ? (
-              <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              <motion.div
+                key="chat"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex flex-col flex-1 overflow-hidden"
               >
-                <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
+                {/* Messages */}
+                <div
+                  ref={chatRef}
+                  className="flex-1 overflow-y-auto p-4 space-y-3"
+                  style={{ scrollbarWidth: "thin" }}
+                >
                   {project.conversation.length === 0 && (
                     <div className="text-center py-8 text-gray-600 text-xs leading-relaxed">
                       Your website is being generated.<br />
@@ -693,11 +670,13 @@ const Builder: React.FC = () => {
                   )}
                 </div>
 
+                {/* Input area */}
                 <div className="p-3 border-t border-white/5 shrink-0">
                   {generating && (
                     <div className="mb-2 flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2">
                       <Loader2 className="w-3 h-3 animate-spin" />
-                      Generating... {fmt(elapsed)}
+                      <span>Generating…</span>
+                      <span className="font-mono ml-auto">{fmtTime(elapsed)}</span>
                     </div>
                   )}
                   <div className="flex gap-2 items-end bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-purple-500/40 transition-colors">
@@ -705,7 +684,7 @@ const Builder: React.FC = () => {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder={generating ? "Wait for generation to finish..." : "Ask for changes..."}
+                      placeholder={generating ? "Wait for generation to finish…" : "Ask for changes…"}
                       disabled={sending || generating}
                       rows={2}
                       className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none resize-none disabled:opacity-50"
@@ -715,7 +694,9 @@ const Builder: React.FC = () => {
                       disabled={!message.trim() || sending || generating}
                       className="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors shrink-0"
                     >
-                      {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      {sending
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Send    className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-600 mt-1.5 text-center">
@@ -724,8 +705,11 @@ const Builder: React.FC = () => {
                 </div>
               </motion.div>
             ) : (
-              <motion.div key="versions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex-1 overflow-y-auto p-3 space-y-2" style={{ scrollbarWidth: "thin" }}
+              <motion.div
+                key="versions"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex-1 overflow-y-auto p-3 space-y-2"
+                style={{ scrollbarWidth: "thin" }}
               >
                 {project.versions.length === 0 ? (
                   <div className="text-center py-8 text-gray-600 text-xs">No versions yet.</div>
@@ -747,13 +731,16 @@ const Builder: React.FC = () => {
 
         {/* ── Right Panel ── */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#050505]">
+
+          {/* Preview toolbar */}
           <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Eye className="w-3.5 h-3.5" />
               {showCode ? "Source Code" : "Live Preview"}
             </div>
             {project.current_code && (
-              <button onClick={() => fetchProject(true)}
+              <button
+                onClick={() => fetchProject(true)}
                 className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -761,15 +748,10 @@ const Builder: React.FC = () => {
             )}
           </div>
 
+          {/* Preview area */}
           <div className="flex-1 overflow-auto flex items-start justify-center p-4 bg-[#060606]">
             {generating && !project.current_code ? (
-              <GeneratingPanel
-                elapsed={elapsed}
-                logs={logs}
-                logsRef={logsRef}
-                onRetry={handleRetry}
-                timedOut={timedOut}
-              />
+              <GeneratingPanel elapsed={elapsed} timedOut={timedOut} />
             ) : !project.current_code ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
                 <Code2 className="w-12 h-12" />
@@ -777,15 +759,17 @@ const Builder: React.FC = () => {
               </div>
             ) : showCode ? (
               <div className="w-full h-full">
-                <pre className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed"
-                  style={{ scrollbarWidth: "thin" }}>
+                <pre
+                  className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed"
+                  style={{ scrollbarWidth: "thin" }}
+                >
                   {project.current_code}
                 </pre>
               </div>
             ) : (
               <div
                 className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
-                style={{ width: deviceWidth[device], maxWidth: "100%" }}
+                style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}
               >
                 <iframe
                   key={project.current_version_index ?? project.current_code.length}
