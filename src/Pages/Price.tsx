@@ -92,7 +92,7 @@ const Price: React.FC = () => {
     },
     {
       title: "Premium Package",
-      price: "39",
+      price: "Upcoming",
       description: "The standard for professional creators.",
       variant: "secondary",
       isPopular: true,
@@ -100,7 +100,7 @@ const Price: React.FC = () => {
     },
     {
       title: "Luxury Package",
-      price: "99",
+      price: "Upcoming",
       description: "Unrestricted computational power.",
       variant: "outline",
       features: ["Everything in Premium", "Dedicated Neural Weights", "24/7 Core Team Access", "White-label Options"]

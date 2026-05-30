@@ -5,6 +5,13 @@ import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Sparkles, Zap, Shield, Loader2 } from "lucide-react"
 import { getAppOrigin } from "@/config/env"
 import { toast } from "sonner"
+import { createAuthClient } from "better-auth/client";
+import { emailOTPClient } from "better-auth/client/plugins";
+
+export const authClient = createAuthClient({
+  baseURL: import.meta.env.VITE_API_URL, 
+  plugins: [emailOTPClient()],
+});
 
 export default function AuthPage() {
   const { pathname } = useParams()
@@ -42,7 +49,7 @@ export default function AuthPage() {
     <main className="flex min-h-screen w-full bg-black overflow-x-hidden">
       <section className="relative hidden w-1/2 flex-col justify-between overflow-hidden border-r border-zinc-800 bg-[#050505] p-16 lg:flex">
         <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-purple-600/10 blur-[120px]" />
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-white">
           </div>
@@ -55,7 +62,7 @@ export default function AuthPage() {
               </span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-zinc-400">
-              Experience the world's most advanced AI website engine. Transform complex ideas into 
+              Experience the world's most advanced AI website engine. Transform complex ideas into
               high-performance digital experiences in seconds.
             </p>
 
@@ -99,8 +106,8 @@ export default function AuthPage() {
 
             {/* Added a mobile-only logo to ensure users know where they are */}
             <div className="flex flex-col items-center mb-8 lg:hidden">
-                <Sparkles className="h-8 w-8 text-purple-500 mb-2" />
-                <h2 className="text-xl font-bold text-white">Apexium AI</h2>
+              <Sparkles className="h-8 w-8 text-purple-500 mb-2" />
+              <h2 className="text-xl font-bold text-white">Apexium AI</h2>
             </div>
 
             <div className="px-2 py-4 sm:px-6 lg:p-0">
