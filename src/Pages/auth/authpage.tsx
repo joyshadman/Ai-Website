@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom"
 import { AuthView } from "@daveyplate/better-auth-ui"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Sparkles, Zap, Shield, Loader2 } from "lucide-react"
-import { authClient } from "@/lib/auth-client"
 import { getAppOrigin } from "@/config/env"
 import { toast } from "sonner"
 
@@ -13,18 +12,30 @@ export default function AuthPage() {
   const showGoogle =
     !pathname || pathname === "signin" || pathname === "signup"
 
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async () => {
     setGoogleLoading(true)
     const origin = getAppOrigin()
-    // Full-page redirect — must stay on same origin as /api (Vercel), not Render.
-    authClient.signIn.social({
-      provider: "google",
-      callbackURL: `${origin}/`,
-      errorCallbackURL: `${origin}/auth/signin`,
-    }).catch(() => {
-      toast.error("Google sign-in failed. Try again.")
+    try {
+      const res = await fetch(`${origin}/api/auth/sign-in/social`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          provider: "google",
+          callbackURL: `${origin}/`,
+          errorCallbackURL: `${origin}/auth/signin`,
+        }),
+      })
+      const data = (await res.json()) as { url?: string; redirect?: boolean }
+      if (data.url) {
+        window.location.href = data.url
+        return
+      }
+      throw new Error("No redirect URL")
+    } catch {
+      toast.error("Google sign-in failed. Please try again.")
       setGoogleLoading(false)
-    })
+    }
   }
 
   return (
