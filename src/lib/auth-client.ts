@@ -1,8 +1,10 @@
-// auth-client.ts — FIXED
 import { createAuthClient } from "better-auth/react";
+import { getApiBaseUrl } from "@/config/env";
+
+const baseURL = getApiBaseUrl();
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://ai-website-api.onrender.com",
+  ...(baseURL ? { baseURL } : {}),
   fetchOptions: {
     credentials: "include",
   },

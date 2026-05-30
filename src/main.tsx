@@ -5,6 +5,12 @@ import { Providers } from './provider'
 import App from './App'
 import './index.css'
 
+try {
+  localStorage.removeItem('auth_session')
+} catch {
+  // ignore
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

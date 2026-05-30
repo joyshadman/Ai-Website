@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '@/config/env';
+
+const baseURL = getApiBaseUrl();
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://ai-website-api.onrender.com",
+  ...(baseURL ? { baseURL } : {}),
   withCredentials: true,
 });
 
