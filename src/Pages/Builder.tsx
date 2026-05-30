@@ -4,7 +4,7 @@ import {
   Send, Monitor, Tablet, Smartphone, Code2, Eye,
   RotateCcw, Save, Globe, GlobeLock, Loader2,
   Sparkles, Check, Copy, Download, RefreshCw, ArrowLeft, Clock,
-  Zap, AlertTriangle, X, Menu, ChevronDown,
+  Zap, AlertTriangle, X, Menu,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
@@ -44,9 +44,9 @@ type Tab    = "chat" | "versions";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL  = 3000;
-const TIMEOUT_HARD   = 180;
-const EDIT_COST      = 5;
+const POLL_INTERVAL = 3000;
+const TIMEOUT_HARD  = 180;
+const EDIT_COST     = 5;
 
 const DEVICE_WIDTH: Record<Device, string> = {
   desktop: "100%",
@@ -59,8 +59,7 @@ const DEVICE_WIDTH: Record<Device, string> = {
 const timerKey = (projectId: string) => `builder_timer_${projectId}`;
 
 function startPersistedTimer(projectId: string) {
-  const existing = localStorage.getItem(timerKey(projectId));
-  if (!existing) {
+  if (!localStorage.getItem(timerKey(projectId))) {
     localStorage.setItem(timerKey(projectId), JSON.stringify({ startedAt: Date.now() }));
   }
 }
@@ -120,62 +119,7 @@ function useScrollToBottom<T extends HTMLElement>(ref: React.RefObject<T | null>
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
-// ─── Credit Confirm Dialog ─────────────────────────────────────────────────────
-
-const CreditConfirmDialog: React.FC<{
-  credits: number; onConfirm: () => void; onCancel: () => void;
-}> = ({ credits, onConfirm, onCancel }) => {
-  const insufficient = credits < EDIT_COST;
-  return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onCancel}
-      >
-        <motion.div
-          className="relative bg-[#0e0e14] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-          initial={{ scale: 0.92, opacity: 0, y: 16 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.92, opacity: 0, y: 16 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button onClick={onCancel} className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
-            <X className="w-3.5 h-3.5" />
-          </button>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${insufficient ? "bg-red-500/10 border border-red-500/20" : "bg-purple-500/10 border border-purple-500/20"}`}>
-            {insufficient ? <AlertTriangle className="w-5 h-5 text-red-400" /> : <Zap className="w-5 h-5 text-purple-400" />}
-          </div>
-          <h3 className="text-white font-semibold text-sm mb-1">
-            {insufficient ? "Not enough credits" : "This will use credits"}
-          </h3>
-          {insufficient ? (
-            <p className="text-gray-400 text-xs leading-relaxed mb-5">
-              You need <span className="text-white font-semibold">{EDIT_COST} credits</span> to make an edit, but you only have <span className="text-red-400 font-semibold">{credits}</span>.
-            </p>
-          ) : (
-            <p className="text-gray-400 text-xs leading-relaxed mb-5">
-              Making this edit will cost <span className="text-purple-300 font-semibold">{EDIT_COST} credits</span>. You currently have <span className="text-white font-semibold">{credits} credits</span> remaining.
-            </p>
-          )}
-          <div className="flex gap-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all">
-              Cancel
-            </button>
-            {!insufficient && (
-              <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all">
-                Confirm · {EDIT_COST} credits
-              </button>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-};
-
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── Standalone sub-components (defined OUTSIDE Builder) ──────────────────────
 
 const TypingDots: React.FC = () => (
   <div className="flex items-center gap-1 px-4 py-3">
@@ -263,6 +207,53 @@ const GeneratingPanel: React.FC<{ elapsed: number; timedOut: boolean }> = ({ ela
   </div>
 );
 
+const CreditConfirmDialog: React.FC<{
+  credits: number; onConfirm: () => void; onCancel: () => void;
+}> = ({ credits, onConfirm, onCancel }) => {
+  const insufficient = credits < EDIT_COST;
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onCancel}>
+        <motion.div
+          className="relative bg-[#0e0e14] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+          initial={{ scale: 0.92, opacity: 0, y: 16 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.92, opacity: 0, y: 16 }}
+          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          onClick={(e) => e.stopPropagation()}>
+          <button onClick={onCancel} className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${insufficient ? "bg-red-500/10 border border-red-500/20" : "bg-purple-500/10 border border-purple-500/20"}`}>
+            {insufficient ? <AlertTriangle className="w-5 h-5 text-red-400" /> : <Zap className="w-5 h-5 text-purple-400" />}
+          </div>
+          <h3 className="text-white font-semibold text-sm mb-1">{insufficient ? "Not enough credits" : "This will use credits"}</h3>
+          {insufficient ? (
+            <p className="text-gray-400 text-xs leading-relaxed mb-5">
+              You need <span className="text-white font-semibold">{EDIT_COST} credits</span> to make an edit, but you only have <span className="text-red-400 font-semibold">{credits}</span>.
+            </p>
+          ) : (
+            <p className="text-gray-400 text-xs leading-relaxed mb-5">
+              Making this edit will cost <span className="text-purple-300 font-semibold">{EDIT_COST} credits</span>. You currently have <span className="text-white font-semibold">{credits} credits</span> remaining.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all">Cancel</button>
+            {!insufficient && (
+              <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all">
+                Confirm · {EDIT_COST} credits
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const CenteredScreen: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="min-h-screen bg-[#030303] flex items-center justify-center p-4">{children}</div>
 );
@@ -272,6 +263,115 @@ const DeviceIcon: Record<Device, React.ReactNode> = {
   tablet:  <Tablet  className="w-4 h-4" />,
   phone:   <Smartphone className="w-4 h-4" />,
 };
+
+// ─── Sidebar Panel (defined outside Builder to prevent remount flashing) ────────
+
+interface SidebarProps {
+  activeTab: Tab;
+  setActiveTab: (t: Tab) => void;
+  project: Project;
+  chatRef: React.RefObject<HTMLDivElement | null>;
+  sending: boolean;
+  generating: boolean;
+  elapsed: number;
+  credits: number;
+  message: string;
+  setMessage: (m: string) => void;
+  handleSendClick: () => void;
+  handleKeyDown: (e: React.KeyboardEvent) => void;
+  rollback: (id: string) => void;
+  rolling: boolean;
+}
+
+const SidebarPanel: React.FC<SidebarProps> = ({
+  activeTab, setActiveTab, project, chatRef, sending, generating,
+  elapsed, credits, message, setMessage, handleSendClick, handleKeyDown,
+  rollback, rolling,
+}) => (
+  <div className="flex flex-col h-full">
+    {/* Tabs */}
+    <div className="flex border-b border-white/5 shrink-0">
+      {(["chat", "versions"] as Tab[]).map((tab) => (
+        <button key={tab} onClick={() => setActiveTab(tab)}
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === tab ? "text-purple-400 border-b-2 border-purple-500" : "text-gray-500 hover:text-gray-300"
+          }`}>
+          {tab === "chat" ? "Chat" : "History"}
+        </button>
+      ))}
+    </div>
+
+    <AnimatePresence mode="wait">
+      {activeTab === "chat" ? (
+        <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex flex-col flex-1 overflow-hidden">
+          {/* Messages */}
+          <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
+            {project.conversation.length === 0 && (
+              <div className="text-center py-8 text-gray-600 text-xs leading-relaxed">
+                Your website is being generated.<br />Ask me to make any changes once it's ready!
+              </div>
+            )}
+            {project.conversation.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
+            {sending && (
+              <div className="flex justify-start">
+                <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mr-2 mt-1 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm"><TypingDots /></div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="p-3 border-t border-white/5 shrink-0">
+            {generating && (
+              <div className="mb-2 flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Generating…</span>
+                <span className="font-mono ml-auto">{fmtTime(elapsed)}</span>
+              </div>
+            )}
+            {!generating && (
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-500">
+                <Zap className="w-3 h-3" />
+                <span>Each edit costs <span className="text-purple-400 font-semibold">{EDIT_COST} credits</span></span>
+                <span className="ml-auto">You have <span className={credits < EDIT_COST ? "text-red-400" : "text-white"}>{credits}</span></span>
+              </div>
+            )}
+            <div className="flex gap-2 items-end bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-purple-500/40 transition-colors">
+              <textarea
+                value={message} onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={generating ? "Wait for generation to finish…" : "Ask for changes…"}
+                disabled={sending || generating} rows={2}
+                className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none resize-none disabled:opacity-50"
+              />
+              <button onClick={handleSendClick} disabled={!message.trim() || sending || generating}
+                className="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors shrink-0">
+                {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-600 mt-1.5 text-center">Enter to send · Shift+Enter for new line</p>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div key="versions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex-1 overflow-y-auto p-3 space-y-2" style={{ scrollbarWidth: "thin" }}>
+          {project.versions.length === 0 ? (
+            <div className="text-center py-8 text-gray-600 text-xs">No versions yet.</div>
+          ) : (
+            [...project.versions].reverse().map((v) => (
+              <VersionItem key={v.id} version={v}
+                isCurrent={v.id === project.current_version_index}
+                onRollback={rollback} rolling={rolling} />
+            ))
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
@@ -295,15 +395,20 @@ const Builder: React.FC = () => {
   const [device,     setDevice]     = useState<Device>("desktop");
   const [activeTab,  setActiveTab]  = useState<Tab>("chat");
   const [pendingMsg, setPendingMsg] = useState<string | null>(null);
-
-  // Mobile states
-  const [showSidebar,  setShowSidebar]  = useState(false);
-  const [showPreview,  setShowPreview]  = useState(true); // mobile: toggle between chat and preview
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   const chatRef = useRef<HTMLDivElement>(null);
   const elapsed = usePersistedTimer(projectId, generating);
 
   useEffect(() => { if (elapsed >= TIMEOUT_HARD) setTimedOut(true); }, [elapsed]);
+
+  // ── Clear timer on unmount (fixes timer persisting after leaving page) ────────
+  useEffect(() => {
+    return () => {
+      if (projectId) clearPersistedTimer(projectId);
+    };
+  }, [projectId]);
 
   const fetchCredits = useCallback(async () => {
     try {
@@ -354,7 +459,6 @@ const Builder: React.FC = () => {
       setCredits((c) => Math.max(0, c - EDIT_COST));
       if (projectId) { clearPersistedTimer(projectId); startPersistedTimer(projectId); }
       setTimedOut(false); setGenerating(true);
-      // On mobile, switch to preview after sending
       setShowPreview(true);
     } catch (error: any) {
       toast.error(apiError(error));
@@ -362,8 +466,6 @@ const Builder: React.FC = () => {
       setSending(false);
     }
   };
-
-  const cancelSend = () => setPendingMsg(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendClick(); }
@@ -391,7 +493,7 @@ const Builder: React.FC = () => {
 
   const rollback = async (versionId: string) => {
     setRolling(true);
-    try { await api.post(`/api/project/${projectId}/rollback/${versionId}`); await fetchProject(true); toast.success("Rolled back successfully!"); }
+    try { await api.post(`/api/project/${projectId}/rollback/${versionId}`); await fetchProject(true); toast.success("Rolled back!"); }
     catch (error: any) { toast.error(apiError(error)); }
     finally { setRolling(false); }
   };
@@ -408,6 +510,13 @@ const Builder: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `${project.name || "website"}.html`; a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Shared sidebar props
+  const sidebarProps: SidebarProps = {
+    activeTab, setActiveTab, project: project!, chatRef, sending, generating,
+    elapsed, credits, message, setMessage, handleSendClick, handleKeyDown,
+    rollback, rolling,
   };
 
   // ─── Loading / not found ──────────────────────────────────────────────────────
@@ -432,102 +541,13 @@ const Builder: React.FC = () => {
     </CenteredScreen>
   );
 
-  // ─── Sidebar content (shared between mobile drawer and desktop panel) ─────────
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Tabs */}
-      <div className="flex border-b border-white/5 shrink-0">
-        {(["chat", "versions"] as Tab[]).map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
-              activeTab === tab ? "text-purple-400 border-b-2 border-purple-500" : "text-gray-500 hover:text-gray-300"
-            }`}>
-            {tab === "chat" ? "Chat" : "History"}
-          </button>
-        ))}
-      </div>
-
-      <AnimatePresence mode="wait">
-        {activeTab === "chat" ? (
-          <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex flex-col flex-1 overflow-hidden">
-            {/* Messages */}
-            <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
-              {project.conversation.length === 0 && (
-                <div className="text-center py-8 text-gray-600 text-xs leading-relaxed">
-                  Your website is being generated.<br />Ask me to make any changes once it's ready!
-                </div>
-              )}
-              {project.conversation.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
-              {sending && (
-                <div className="flex justify-start">
-                  <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mr-2 mt-1 shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm"><TypingDots /></div>
-                </div>
-              )}
-            </div>
-
-            {/* Input */}
-            <div className="p-3 border-t border-white/5 shrink-0">
-              {generating && (
-                <div className="mb-2 flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Generating…</span>
-                  <span className="font-mono ml-auto">{fmtTime(elapsed)}</span>
-                </div>
-              )}
-              {!generating && (
-                <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-500">
-                  <Zap className="w-3 h-3" />
-                  <span>Each edit costs <span className="text-purple-400 font-semibold">{EDIT_COST} credits</span></span>
-                  <span className="ml-auto">You have <span className={credits < EDIT_COST ? "text-red-400" : "text-white"}>{credits}</span></span>
-                </div>
-              )}
-              <div className="flex gap-2 items-end bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-purple-500/40 transition-colors">
-                <textarea
-                  value={message} onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={generating ? "Wait for generation to finish…" : "Ask for changes…"}
-                  disabled={sending || generating} rows={2}
-                  className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none resize-none disabled:opacity-50"
-                />
-                <button onClick={handleSendClick} disabled={!message.trim() || sending || generating}
-                  className="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors shrink-0">
-                  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-600 mt-1.5 text-center">Enter to send · Shift+Enter for new line</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div key="versions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto p-3 space-y-2" style={{ scrollbarWidth: "thin" }}>
-            {project.versions.length === 0 ? (
-              <div className="text-center py-8 text-gray-600 text-xs">No versions yet.</div>
-            ) : (
-              [...project.versions].reverse().map((v) => (
-                <VersionItem key={v.id} version={v}
-                  isCurrent={v.id === project.current_version_index}
-                  onRollback={rollback} rolling={rolling} />
-              ))
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden font-sans">
 
-      {/* Credit confirm dialog */}
       {pendingMsg !== null && (
-        <CreditConfirmDialog credits={credits} onConfirm={confirmSend} onCancel={cancelSend} />
+        <CreditConfirmDialog credits={credits} onConfirm={confirmSend} onCancel={() => setPendingMsg(null)} />
       )}
 
       {/* Mobile sidebar drawer */}
@@ -541,13 +561,15 @@ const Builder: React.FC = () => {
               className="fixed inset-y-0 left-0 z-50 w-80 bg-[#0a0a0f] border-r border-white/5 flex flex-col lg:hidden"
               initial={{ x: -320 }} animate={{ x: 0 }} exit={{ x: -320 }}
               transition={{ type: "spring", stiffness: 320, damping: 30 }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
                 <span className="text-sm font-semibold text-white">Panel</span>
                 <button onClick={() => setShowSidebar(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-1 overflow-hidden"><SidebarContent /></div>
+              <div className="flex-1 overflow-hidden">
+                <SidebarPanel {...sidebarProps} />
+              </div>
             </motion.div>
           </>
         )}
@@ -555,10 +577,7 @@ const Builder: React.FC = () => {
 
       {/* ── Top Bar ── */}
       <div className="h-14 border-b border-white/5 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-black/40 backdrop-blur-xl gap-2">
-
-        {/* Left */}
         <div className="flex items-center gap-2 min-w-0">
-          {/* Mobile sidebar toggle */}
           <button onClick={() => setShowSidebar(true)}
             className="lg:hidden p-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-colors shrink-0">
             <Menu className="w-4 h-4" />
@@ -568,9 +587,7 @@ const Builder: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate max-w-[100px] sm:max-w-[160px] md:max-w-[240px]">
-              {project.name}
-            </p>
+            <p className="text-sm font-semibold text-white truncate max-w-[100px] sm:max-w-[160px] md:max-w-[240px]">{project.name}</p>
             <p className="text-[10px] flex items-center gap-1">
               {generating ? (
                 <><Loader2 className="w-2.5 h-2.5 animate-spin text-purple-400" /><span className="text-purple-400 font-mono">{fmtTime(elapsed)}</span></>
@@ -583,7 +600,6 @@ const Builder: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: device switcher (md+) */}
         <div className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 shrink-0">
           {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
             <button key={d} onClick={() => setDevice(d)}
@@ -593,22 +609,18 @@ const Builder: React.FC = () => {
           ))}
         </div>
 
-        {/* Right */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Credit badge */}
-          <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors ${
+          <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl border text-xs font-bold ${
             credits < EDIT_COST ? "bg-red-500/10 border-red-500/20 text-red-400"
             : credits < 20 ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
             : "bg-purple-500/10 border-purple-500/20 text-purple-300"
           }`}>
-            <Zap className="w-3.5 h-3.5" />
-            <span>{credits}</span>
+            <Zap className="w-3.5 h-3.5" /><span>{credits}</span>
           </div>
 
-          {/* Mobile: preview/chat toggle */}
           <button onClick={() => setShowPreview((v) => !v)}
             className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-white/10 text-gray-400 hover:text-white transition-all">
-            {showPreview ? <><Code2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Chat</span></> : <><Eye className="w-3.5 h-3.5" /><span className="hidden sm:inline">Preview</span></>}
+            {showPreview ? <Code2 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>
 
           <button onClick={() => setShowCode((v) => !v)}
@@ -650,75 +662,72 @@ const Builder: React.FC = () => {
       {/* ── Main Layout ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Desktop Left Panel ── */}
+        {/* Desktop sidebar — stable, no remount */}
         <div className="hidden lg:flex w-80 shrink-0 border-r border-white/5 flex-col bg-black/20">
-          <SidebarContent />
+          <SidebarPanel {...sidebarProps} />
         </div>
 
-        {/* ── Right / Preview Panel ── */}
+        {/* Right panel */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#050505]">
 
-          {/* Mobile: full chat view when preview is hidden */}
+          {/* Mobile: chat view */}
           {!showPreview && (
-            <div className="flex-1 overflow-hidden flex flex-col lg:hidden bg-[#0a0a0f]">
-              <SidebarContent />
+            <div className="flex flex-col flex-1 overflow-hidden lg:hidden bg-[#0a0a0f]">
+              <SidebarPanel {...sidebarProps} />
             </div>
           )}
 
-          {/* Preview area */}
-          {(showPreview || true) && (
-            <div className={`flex-col flex-1 overflow-hidden ${!showPreview ? "hidden lg:flex" : "flex"}`}>
-              <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Eye className="w-3.5 h-3.5" />
-                  {showCode ? "Source Code" : "Live Preview"}
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Mobile device switcher */}
-                  <div className="flex md:hidden items-center gap-1">
-                    {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
-                      <button key={d} onClick={() => setDevice(d)}
-                        className={`p-1.5 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"}`}>
-                        {DeviceIcon[d]}
-                      </button>
-                    ))}
-                  </div>
-                  {project.current_code && (
-                    <button onClick={() => fetchProject(true)}
-                      className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+          {/* Preview */}
+          <div className={`flex-col flex-1 overflow-hidden ${!showPreview ? "hidden lg:flex" : "flex"}`}>
+            <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Eye className="w-3.5 h-3.5" />
+                {showCode ? "Source Code" : "Live Preview"}
               </div>
-
-              <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 bg-[#060606]">
-                {generating && !project.current_code ? (
-                  <GeneratingPanel elapsed={elapsed} timedOut={timedOut} />
-                ) : !project.current_code ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
-                    <Code2 className="w-12 h-12" />
-                    <p className="text-sm">No code generated yet.</p>
-                  </div>
-                ) : showCode ? (
-                  <div className="w-full h-full">
-                    <pre className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed" style={{ scrollbarWidth: "thin" }}>
-                      {project.current_code}
-                    </pre>
-                  </div>
-                ) : (
-                  <div className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
-                    style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}>
-                    <iframe
-                      key={project.current_version_index ?? project.current_code.length}
-                      srcDoc={project.current_code} title="Preview"
-                      className="w-full h-full border-none"
-                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="flex md:hidden items-center gap-1">
+                  {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
+                    <button key={d} onClick={() => setDevice(d)}
+                      className={`p-1.5 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"}`}>
+                      {DeviceIcon[d]}
+                    </button>
+                  ))}
+                </div>
+                {project.current_code && (
+                  <button onClick={() => fetchProject(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
             </div>
-          )}
+
+            <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 bg-[#060606]">
+              {generating && !project.current_code ? (
+                <GeneratingPanel elapsed={elapsed} timedOut={timedOut} />
+              ) : !project.current_code ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
+                  <Code2 className="w-12 h-12" />
+                  <p className="text-sm">No code generated yet.</p>
+                </div>
+              ) : showCode ? (
+                <div className="w-full h-full">
+                  <pre className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed" style={{ scrollbarWidth: "thin" }}>
+                    {project.current_code}
+                  </pre>
+                </div>
+              ) : (
+                <div className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
+                  style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}>
+                  <iframe
+                    key={project.current_version_index ?? project.current_code.length}
+                    srcDoc={project.current_code} title="Preview"
+                    className="w-full h-full border-none"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
