@@ -79,7 +79,7 @@ function useScrollToBottom<T extends HTMLElement>(ref: React.RefObject<T | null>
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
-// ─── Standalone sub-components (defined OUTSIDE Builder) ──────────────────────
+// ─── Standalone sub-components ────────────────────────────────────────────────
 
 const TypingDots: React.FC = () => (
   <div className="flex items-center gap-1 px-4 py-3">
@@ -132,186 +132,6 @@ const VersionItem: React.FC<{
   </div>
 );
 
-// ─── Live Streaming Code Panel ─────────────────────────────────────────────────
-
-interface LiveCodePanelProps {
-  projectName: string;
-  initialPrompt: string;
-  generating: boolean;
-}
-
-const LiveCodePanel: React.FC<LiveCodePanelProps> = ({ projectName, initialPrompt, generating }) => {
-  const [streamedCode, setStreamedCode]   = useState("");
-  const [isStreaming,  setIsStreaming]     = useState(false);
-  const [streamDone,   setStreamDone]     = useState(false);
-  const codeRef = useRef<HTMLPreElement>(null);
-
-  // Auto-scroll code panel as it streams
-  useEffect(() => {
-    if (codeRef.current) {
-      codeRef.current.scrollTop = codeRef.current.scrollHeight;
-    }
-  }, [streamedCode]);
-
-  // Start streaming whenever generating flips to true
-  useEffect(() => {
-    if (!generating) { setStreamedCode(""); setStreamDone(false); return; }
-
-    let cancelled = false;
-    setStreamedCode("");
-    setStreamDone(false);
-    setIsStreaming(true);
-
-    (async () => {
-      try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            stream: true,
-            system: `You are a world-class frontend developer. Generate a complete, beautiful, single-file HTML website.
-Output ONLY raw HTML code — no explanation, no markdown fences, no preamble.
-Start immediately with <!DOCTYPE html>.`,
-            messages: [
-              {
-                role: "user",
-                content: `Project: "${projectName}"\n\nRequirements: ${initialPrompt}\n\nGenerate the complete HTML website now.`,
-              },
-            ],
-          }),
-        });
-
-        if (!res.body) return;
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done || cancelled) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") break;
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed?.delta?.text ?? parsed?.content_block?.text ?? "";
-              if (delta && !cancelled) {
-                setStreamedCode((prev) => prev + delta);
-              }
-            } catch { /* ignore malformed SSE chunks */ }
-          }
-        }
-      } catch (err) {
-        console.error("Streaming error:", err);
-      } finally {
-        if (!cancelled) { setIsStreaming(false); setStreamDone(true); }
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [generating, projectName, initialPrompt]);
-
-  const lineCount = streamedCode.split("\n").length;
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Panel header */}
-      <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <Code2 className="w-3.5 h-3.5" />
-          <span>AI is writing code</span>
-          {isStreaming && (
-            <span className="flex items-center gap-1 text-purple-400">
-              <motion.span
-                className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"
-                animate={{ opacity: [1, 0.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              />
-              live
-            </span>
-          )}
-          {streamDone && <span className="text-green-400">done</span>}
-        </div>
-        <span className="text-[10px] text-gray-600 font-mono tabular-nums">
-          {lineCount > 1 ? `${lineCount} lines` : ""}
-        </span>
-      </div>
-
-      {/* Streamed code */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Glow backdrop when streaming */}
-        {isStreaming && (
-          <motion.div
-            className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
-            style={{
-              background: "linear-gradient(to top, rgba(139,92,246,0.08) 0%, transparent 100%)",
-            }}
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-        )}
-
-        {streamedCode ? (
-          <pre
-            ref={codeRef}
-            className="h-full overflow-auto p-4 text-[11px] font-mono leading-relaxed text-gray-300 whitespace-pre-wrap"
-            style={{ scrollbarWidth: "thin" }}
-          >
-            {/* Line numbers + code */}
-            {streamedCode.split("\n").map((line, i) => (
-              <div key={i} className="flex gap-3 group">
-                <span className="select-none text-gray-700 text-right shrink-0 w-8 tabular-nums">
-                  {i + 1}
-                </span>
-                <span className={
-                  line.startsWith("  ") ? "text-gray-300" :
-                  line.startsWith("<") ? "text-purple-300" :
-                  line.startsWith("//") || line.startsWith("/*") ? "text-gray-500 italic" :
-                  "text-gray-300"
-                }>
-                  {line || " "}
-                </span>
-              </div>
-            ))}
-            {/* Blinking cursor while streaming */}
-            {isStreaming && (
-              <div className="flex gap-3">
-                <span className="select-none text-gray-700 w-8 tabular-nums text-right">{lineCount + 1}</span>
-                <motion.span
-                  className="inline-block w-2 h-3.5 bg-purple-400 rounded-sm"
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.6, repeat: Infinity }}
-                />
-              </div>
-            )}
-          </pre>
-        ) : (
-          /* Waiting state — show placeholder skeleton lines */
-          <div className="h-full p-4 space-y-2 overflow-hidden">
-            {[...Array(18)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="h-3 rounded bg-white/5"
-                style={{ width: `${30 + Math.sin(i * 1.7) * 25 + (i % 3) * 12}%` }}
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08 }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ─── Generating Panel (no timer) ───────────────────────────────────────────────
-
 const GeneratingPanel: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
     <div className="relative">
@@ -322,10 +142,7 @@ const GeneratingPanel: React.FC = () => (
         animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
         transition={{ duration: 2, repeat: Infinity }} />
     </div>
-    <div className="text-center">
-      <p className="text-white font-semibold mb-2">Building your website…</p>
-      <p className="text-gray-500 text-xs">Check the Code tab to watch it being written live</p>
-    </div>
+    <p className="text-white font-semibold">Building your website…</p>
     <div className="flex gap-1.5">
       {[0, 1, 2, 3].map((i) => (
         <motion.div key={i} className="w-2 h-2 rounded-full bg-purple-500"
@@ -417,7 +234,6 @@ const SidebarPanel: React.FC<SidebarProps> = ({
   rollback, rolling,
 }) => (
   <div className="flex flex-col h-full">
-    {/* Tabs */}
     <div className="flex border-b border-white/5 shrink-0">
       {(["chat", "versions"] as Tab[]).map((tab) => (
         <button key={tab} onClick={() => setActiveTab(tab)}
@@ -433,7 +249,6 @@ const SidebarPanel: React.FC<SidebarProps> = ({
       {activeTab === "chat" ? (
         <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="flex flex-col flex-1 overflow-hidden">
-          {/* Messages */}
           <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
             {project.conversation.length === 0 && (
               <div className="text-center py-8 text-gray-600 text-xs leading-relaxed">
@@ -451,7 +266,6 @@ const SidebarPanel: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Input */}
           <div className="p-3 border-t border-white/5 shrink-0">
             {generating && (
               <div className="mb-2 flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2">
@@ -623,14 +437,11 @@ const Builder: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Shared sidebar props
   const sidebarProps: SidebarProps = {
     activeTab, setActiveTab, project: project!, chatRef, sending, generating,
     credits, message, setMessage, handleSendClick, handleKeyDown,
     rollback, rolling,
   };
-
-  // ─── Loading / not found ──────────────────────────────────────────────────────
 
   if (loading) return (
     <CenteredScreen>
@@ -651,8 +462,6 @@ const Builder: React.FC = () => {
       </div>
     </CenteredScreen>
   );
-
-  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden font-sans">
@@ -686,7 +495,7 @@ const Builder: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Top Bar ── */}
+      {/* Top Bar */}
       <div className="h-14 border-b border-white/5 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-black/40 backdrop-blur-xl gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={() => setShowSidebar(true)}
@@ -768,94 +577,70 @@ const Builder: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main Layout ── */}
+      {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Desktop sidebar */}
         <div className="hidden lg:flex w-80 shrink-0 border-r border-white/5 flex-col bg-black/20">
           <SidebarPanel {...sidebarProps} />
         </div>
 
-        {/* Right panel */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#050505]">
 
-          {/* Mobile: chat view */}
           {!showPreview && (
             <div className="flex flex-col flex-1 overflow-hidden lg:hidden bg-[#0a0a0f]">
               <SidebarPanel {...sidebarProps} />
             </div>
           )}
 
-          {/* Preview / Code area */}
           <div className={`flex-col flex-1 overflow-hidden ${!showPreview ? "hidden lg:flex" : "flex"}`}>
-
-            {/* ── While generating: split view — live code on left, spinner on right ── */}
-            {generating && !project.current_code ? (
-              <div className="flex flex-1 overflow-hidden">
-                {/* Live code stream — left 60% */}
-                <div className="flex-1 border-r border-white/5 overflow-hidden bg-[#060606]">
-                  <LiveCodePanel
-                    projectName={project.name}
-                    initialPrompt={project.initial_prompt}
-                    generating={generating}
-                  />
-                </div>
-                {/* Generating status — right 40% */}
-                <div className="w-64 shrink-0 hidden md:flex flex-col items-center justify-center bg-[#050505]">
-                  <GeneratingPanel />
-                </div>
+            <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Eye className="w-3.5 h-3.5" />
+                {showCode ? "Source Code" : "Live Preview"}
               </div>
-            ) : (
-              <>
-                {/* Normal header bar */}
-                <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Eye className="w-3.5 h-3.5" />
-                    {showCode ? "Source Code" : "Live Preview"}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex md:hidden items-center gap-1">
-                      {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
-                        <button key={d} onClick={() => setDevice(d)}
-                          className={`p-1.5 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"}`}>
-                          {DeviceIcon[d]}
-                        </button>
-                      ))}
-                    </div>
-                    {project.current_code && (
-                      <button onClick={() => fetchProject(true)}
-                        className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="flex md:hidden items-center gap-1">
+                  {(["desktop", "tablet", "phone"] as Device[]).map((d) => (
+                    <button key={d} onClick={() => setDevice(d)}
+                      className={`p-1.5 rounded-lg transition-all ${device === d ? "bg-purple-500/30 text-purple-300" : "text-gray-500 hover:text-white"}`}>
+                      {DeviceIcon[d]}
+                    </button>
+                  ))}
                 </div>
+                {project.current_code && (
+                  <button onClick={() => fetchProject(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-                <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 bg-[#060606]">
-                  {!project.current_code ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
-                      <Code2 className="w-12 h-12" />
-                      <p className="text-sm">No code generated yet.</p>
-                    </div>
-                  ) : showCode ? (
-                    <div className="w-full h-full">
-                      <pre className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed" style={{ scrollbarWidth: "thin" }}>
-                        {project.current_code}
-                      </pre>
-                    </div>
-                  ) : (
-                    <div className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
-                      style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}>
-                      <iframe
-                        key={project.current_version_index ?? project.current_code.length}
-                        srcDoc={project.current_code} title="Preview"
-                        className="w-full h-full border-none"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
-                    </div>
-                  )}
+            <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 bg-[#060606]">
+              {generating && !project.current_code ? (
+                <GeneratingPanel />
+              ) : !project.current_code ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
+                  <Code2 className="w-12 h-12" />
+                  <p className="text-sm">No code generated yet.</p>
                 </div>
-              </>
-            )}
+              ) : showCode ? (
+                <div className="w-full h-full">
+                  <pre className="text-xs text-gray-300 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 overflow-auto h-full whitespace-pre-wrap font-mono leading-relaxed" style={{ scrollbarWidth: "thin" }}>
+                    {project.current_code}
+                  </pre>
+                </div>
+              ) : (
+                <div className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
+                  style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}>
+                  <iframe
+                    key={project.current_version_index ?? project.current_code.length}
+                    srcDoc={project.current_code} title="Preview"
+                    className="w-full h-full border-none"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
