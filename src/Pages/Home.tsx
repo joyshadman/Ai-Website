@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -37,6 +37,18 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (!error) return;
+    toast.error(
+      error === "state_mismatch"
+        ? "Sign-in session expired. Please try Google sign-in again."
+        : `Sign-in failed (${error}). Please try again.`
+    );
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
 
   const onSubmitHandler = async (e: FormEvent) => {
     e.preventDefault();

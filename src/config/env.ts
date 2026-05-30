@@ -8,15 +8,12 @@ export function getAppOrigin(): string {
 }
 
 /**
- * Dev: empty → relative /api URLs, Vite proxies to localhost:3000.
- * Prod (Vercel): empty → relative /api, vercel.json proxies to API (no CORS).
- * Prod (direct API): set VITE_API_BASE_URL in Vercel env.
+ * Dev: empty → /api via Vite proxy to localhost:3000.
+ * Prod: empty → /api via Vercel proxy (same origin — required for Google OAuth state).
  */
 export function getApiBaseUrl(): string {
   const override = import.meta.env.VITE_API_BASE_URL?.trim();
   if (override) return override.replace(/\/$/, "");
-  if (import.meta.env.DEV) return "";
-  // Same-origin /api on Vercel — avoids cross-origin CORS/cookies
   return "";
 }
 

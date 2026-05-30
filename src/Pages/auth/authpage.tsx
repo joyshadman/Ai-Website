@@ -13,20 +13,18 @@ export default function AuthPage() {
   const showGoogle =
     !pathname || pathname === "signin" || pathname === "signup"
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = () => {
     setGoogleLoading(true)
-    try {
-      const origin = getAppOrigin()
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: `${origin}/`,
-        errorCallbackURL: `${origin}/auth/signin`,
-      })
-    } catch {
-      toast.error("Google sign-in failed. Check API Google credentials.")
-    } finally {
+    const origin = getAppOrigin()
+    // Full-page redirect — must stay on same origin as /api (Vercel), not Render.
+    authClient.signIn.social({
+      provider: "google",
+      callbackURL: `${origin}/`,
+      errorCallbackURL: `${origin}/auth/signin`,
+    }).catch(() => {
+      toast.error("Google sign-in failed. Try again.")
       setGoogleLoading(false)
-    }
+    })
   }
 
   return (
