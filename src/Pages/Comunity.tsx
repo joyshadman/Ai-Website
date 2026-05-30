@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ExternalLink,
-  Eye,
   Search,
   Filter,
   Globe,
@@ -14,7 +13,6 @@ import {
   Monitor,
   Smartphone,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import Btn from "../components/Btn.tsx";
 import api from "@/configs/axios.ts";
 import { toast } from "sonner";
@@ -123,22 +121,20 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ project, onClose }) => {
             <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("desktop")}
-                className={`p-1.5 rounded-lg transition-all ${
-                  viewMode === "desktop"
+                className={`p-1.5 rounded-lg transition-all ${viewMode === "desktop"
                     ? "bg-purple-500/30 text-purple-300"
                     : "text-gray-500 hover:text-white"
-                }`}
+                  }`}
                 title="Desktop view"
               >
                 <Monitor className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode("mobile")}
-                className={`p-1.5 rounded-lg transition-all ${
-                  viewMode === "mobile"
+                className={`p-1.5 rounded-lg transition-all ${viewMode === "mobile"
                     ? "bg-purple-500/30 text-purple-300"
                     : "text-gray-500 hover:text-white"
-                }`}
+                  }`}
                 title="Mobile view"
               >
                 <Smartphone className="w-4 h-4" />
@@ -200,7 +196,7 @@ interface CommunityCardProps extends CommunityProject {
 }
 
 const CommunityCard: React.FC<CommunityCardProps> = (props) => {
-  const { id, name, current_code, user, updatedAt, onPreview } = props;
+  const { name, current_code, user, updatedAt, onPreview } = props;
   const authorName = authorOf(user);
 
   return (
