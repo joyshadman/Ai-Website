@@ -4,6 +4,7 @@ import { AuthView } from "@daveyplate/better-auth-ui"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Sparkles, Zap, Shield, Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
+import { getAppOrigin } from "@/config/env"
 import { toast } from "sonner"
 
 export default function AuthPage() {
@@ -15,9 +16,11 @@ export default function AuthPage() {
   const signInWithGoogle = async () => {
     setGoogleLoading(true)
     try {
+      const origin = getAppOrigin()
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: `${origin}/`,
+        errorCallbackURL: `${origin}/auth/signin`,
       })
     } catch {
       toast.error("Google sign-in failed. Check API Google credentials.")
