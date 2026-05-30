@@ -26,13 +26,6 @@ const Setting = () => {
                         }}
                     />
                 </div>
-
-                <div className="w-full">
-                    <ChangePasswordCard 
-                        classNames={midnightStyles}
-                    />
-                </div>
-
             </div>
         </div>
     )

@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/react";
+import { emailOTPClient } from "better-auth/client/plugins";
 
-/** Always same-origin /api/auth in the browser (required for Google OAuth cookies). */
 export const authClient = createAuthClient({
   baseURL:
     typeof window !== "undefined"
@@ -9,4 +9,5 @@ export const authClient = createAuthClient({
   fetchOptions: {
     credentials: "include",
   },
+  plugins: [emailOTPClient()],
 });

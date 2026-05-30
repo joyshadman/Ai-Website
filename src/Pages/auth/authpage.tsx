@@ -1,181 +1,270 @@
-import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { AuthView } from "@daveyplate/better-auth-ui"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, Sparkles, Zap, Shield, Loader2 } from "lucide-react"
-import { getAppOrigin } from "@/config/env"
-import { toast } from "sonner"
-import { createAuthClient } from "better-auth/client";
-import { emailOTPClient } from "better-auth/client/plugins";
-
-export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_API_URL, 
-  plugins: [emailOTPClient()],
-});
+import { CheckCircle2, Sparkles, Zap, Shield } from "lucide-react"
 
 export default function AuthPage() {
   const { pathname } = useParams()
-  const [googleLoading, setGoogleLoading] = useState(false)
-  const showGoogle =
-    !pathname || pathname === "signin" || pathname === "signup"
-
-  const signInWithGoogle = async () => {
-    setGoogleLoading(true)
-    const origin = getAppOrigin()
-    try {
-      const res = await fetch(`${origin}/api/auth/sign-in/social`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          provider: "google",
-          callbackURL: `${origin}/`,
-          errorCallbackURL: `${origin}/auth/signin`,
-        }),
-      })
-      const data = (await res.json()) as { url?: string; redirect?: boolean }
-      if (data.url) {
-        window.location.href = data.url
-        return
-      }
-      throw new Error("No redirect URL")
-    } catch {
-      toast.error("Google sign-in failed. Please try again.")
-      setGoogleLoading(false)
-    }
-  }
 
   return (
-    <main className="flex min-h-screen w-full bg-black overflow-x-hidden">
-      <section className="relative hidden w-1/2 flex-col justify-between overflow-hidden border-r border-zinc-800 bg-[#050505] p-16 lg:flex">
-        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-purple-600/10 blur-[120px]" />
+    <main className="flex min-h-screen w-full overflow-x-hidden" style={{ background: "#080808", fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-white">
+        .auth-glow {
+          background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.25), transparent);
+        }
+        .grid-bg {
+          background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+          background-size: 48px 48px;
+        }
+        .card-glass {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          backdrop-filter: blur(24px);
+        }
+        .orb {
+          filter: blur(80px);
+          border-radius: 50%;
+          position: absolute;
+          pointer-events: none;
+        }
+        .feature-pill {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 999px;
+          padding: 10px 18px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: rgba(255,255,255,0.65);
+          letter-spacing: 0.01em;
+          transition: all 0.2s;
+        }
+        .feature-pill:hover {
+          background: rgba(139,92,246,0.1);
+          border-color: rgba(139,92,246,0.3);
+          color: rgba(255,255,255,0.9);
+        }
+        .feature-pill svg {
+          color: #8b5cf6;
+          flex-shrink: 0;
+        }
+        .brand-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(139,92,246,0.12);
+          border: 1px solid rgba(139,92,246,0.25);
+          border-radius: 999px;
+          padding: 4px 12px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #a78bfa;
+          margin-bottom: 32px;
+        }
+
+        /* AuthView overrides */
+        .auth-shell .dark {
+          --background: transparent;
+          --card: transparent;
+          --card-foreground: #fafafa;
+          --foreground: #fafafa;
+          --muted: rgba(255,255,255,0.06);
+          --muted-foreground: rgba(255,255,255,0.45);
+          --border: rgba(255,255,255,0.1);
+          --input: rgba(255,255,255,0.06);
+          --ring: #8b5cf6;
+          --primary: #8b5cf6;
+          --primary-foreground: #fff;
+          --radius: 0.75rem;
+        }
+        .auth-shell input {
+          background: rgba(255,255,255,0.05) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          color: #fff !important;
+          border-radius: 10px !important;
+          height: 44px !important;
+          font-size: 14px !important;
+          transition: border-color 0.2s, box-shadow 0.2s !important;
+        }
+        .auth-shell input:focus {
+          border-color: #8b5cf6 !important;
+          box-shadow: 0 0 0 3px rgba(139,92,246,0.15) !important;
+          outline: none !important;
+        }
+        .auth-shell input::placeholder { color: rgba(255,255,255,0.3) !important; }
+        .auth-shell label {
+          color: rgba(255,255,255,0.55) !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          letter-spacing: 0.04em !important;
+          text-transform: uppercase !important;
+        }
+        .auth-shell button[type="submit"] {
+          background: linear-gradient(135deg, #7c3aed, #8b5cf6) !important;
+          border: none !important;
+          border-radius: 10px !important;
+          height: 44px !important;
+          font-weight: 600 !important;
+          font-size: 14px !important;
+          letter-spacing: 0.02em !important;
+          box-shadow: 0 4px 24px rgba(139,92,246,0.35) !important;
+          transition: all 0.2s !important;
+        }
+        .auth-shell button[type="submit"]:hover {
+          box-shadow: 0 6px 32px rgba(139,92,246,0.5) !important;
+          transform: translateY(-1px) !important;
+        }
+        .auth-shell button[type="submit"]:active { transform: scale(0.98) !important; }
+        .auth-shell a { color: #a78bfa !important; font-size: 13px !important; }
+        .auth-shell a:hover { color: #c4b5fd !important; }
+        .auth-shell h1, .auth-shell h2, .auth-shell h3 {
+          font-family: 'Syne', sans-serif !important;
+          color: #fff !important;
+          font-size: 22px !important;
+          font-weight: 800 !important;
+          letter-spacing: -0.02em !important;
+          margin-bottom: 6px !important;
+        }
+        .auth-shell p {
+          color: rgba(255,255,255,0.4) !important;
+          font-size: 13px !important;
+          margin-bottom: 24px !important;
+        }
+        /* Google / social button */
+        .auth-shell [class*="social"] button,
+        .auth-shell button:not([type="submit"]):not([aria-label]) {
+          background: rgba(255,255,255,0.05) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          border-radius: 10px !important;
+          color: #fff !important;
+          height: 44px !important;
+          font-weight: 500 !important;
+          font-size: 14px !important;
+          transition: all 0.2s !important;
+        }
+        .auth-shell [class*="social"] button:hover,
+        .auth-shell button:not([type="submit"]):not([aria-label]):hover {
+          background: rgba(255,255,255,0.09) !important;
+          border-color: rgba(255,255,255,0.2) !important;
+        }
+        /* Divider */
+        .auth-shell [class*="separator"], .auth-shell hr {
+          border-color: rgba(255,255,255,0.08) !important;
+        }
+        .auth-shell [class*="separator"] span {
+          color: rgba(255,255,255,0.3) !important;
+          font-size: 11px !important;
+          background: transparent !important;
+        }
+      `}</style>
+
+      {/* ── Left Panel ───────────────────────────────────────────────────── */}
+      <section className="relative hidden lg:flex w-1/2 flex-col justify-between overflow-hidden border-r border-white/[0.06] bg-[#050505] p-16 grid-bg">
+
+        {/* Orbs */}
+        <div className="orb w-[500px] h-[500px] bg-violet-600/20 -top-32 -left-32" />
+        <div className="orb w-[300px] h-[300px] bg-indigo-600/15 bottom-20 right-10" />
+
+        <div className="relative z-10 flex flex-col justify-between h-full">
+          {/* Top brand */}
+          <div className="flex items-center gap-2">
+            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#7c3aed,#6d28d9)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Sparkles size={16} color="#fff" />
+            </div>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: "#fff", letterSpacing: "-0.02em" }}>
+              Apexium
+            </span>
           </div>
 
-          <div className="mt-20 max-w-lg">
-            <h1 className="text-5xl font-medium leading-tight text-white mt-40">
-              The future of the web, <br />
-              <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                built by intelligence.
+          {/* Center content */}
+          <div className="max-w-md">
+            <div className="brand-tag">
+              <Sparkles size={10} />
+              AI-Powered Platform
+            </div>
+
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(36px,4vw,52px)", lineHeight: 1.1, color: "#fff", letterSpacing: "-0.03em", marginBottom: 20 }}>
+              The future of<br />
+              <span style={{ background: "linear-gradient(135deg, #a78bfa, #818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                the web
               </span>
+              {" "}is here.
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-zinc-400">
-              Experience the world's most advanced AI website engine. Transform complex ideas into
-              high-performance digital experiences in seconds.
+
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, lineHeight: 1.7, marginBottom: 40, maxWidth: 380 }}>
+              Transform complex ideas into high-performance digital experiences. Built by intelligence, deployed in seconds.
             </p>
 
-            <ul className="mt-10 space-y-5">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { icon: Zap, text: "Instant Enterprise-Grade Deployment" },
-                { icon: Shield, text: "Autonomous SEO & Scaling" },
-                { icon: CheckCircle2, text: "Neural Interface Design" },
+                { icon: Shield, text: "Autonomous SEO & Performance Scaling" },
+                { icon: CheckCircle2, text: "Neural Interface Design Engine" },
               ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3 text-zinc-300">
-                  <item.icon className="h-5 w-5 text-purple-500" />
-                  <span>{item.text}</span>
-                </li>
+                <div key={i} className="feature-pill">
+                  <item.icon size={14} />
+                  {item.text}
+                </div>
               ))}
-            </ul>
+            </div>
+          </div>
+
+          {/* Bottom quote */}
+          <div style={{ borderLeft: "2px solid rgba(139,92,246,0.4)", paddingLeft: 16 }}>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+              "The most advanced AI website engine<br />we've ever integrated into our stack."
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, marginTop: 6, margin: "6px 0 0" }}>
+              — Early Access Partner
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="relative flex flex-1 flex-col items-center justify-center p-4 sm:p-8 lg:p-12">
-        <div className="fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.08),transparent_70%)] lg:hidden" />
+      {/* ── Right Panel ──────────────────────────────────────────────────── */}
+      <section className="relative flex flex-1 flex-col items-center justify-center p-6 auth-glow">
+
+        {/* Mobile logo */}
+        <div className="flex lg:hidden items-center gap-2 mb-10">
+          <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#7c3aed,#6d28d9)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Sparkles size={16} color="#fff" />
+          </div>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: "-0.02em" }}>
+            Apexium
+          </span>
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            style={{
-              ["--primary" as string]: "240 5.9% 90%",
-              ["--primary-foreground" as string]: "240 5.9% 10%",
-              ["--ring" as string]: "263.4 70% 50.4%",
-              ["--radius" as string]: "0.75rem",
-            }}
-            // Adjusted max-width and background for mobile clarity
-            className="relative z-10 w-full max-w-[400px] rounded-2xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-md lg:bg-transparent lg:border-none lg:shadow-none"
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            className="w-full auth-shell"
+            style={{ maxWidth: 380 }}
           >
-            {/* Top Accent Line (Visible on Mobile to define the card) */}
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/40 to-transparent lg:hidden" />
-
-            {/* Added a mobile-only logo to ensure users know where they are */}
-            <div className="flex flex-col items-center mb-8 lg:hidden">
-              <Sparkles className="h-8 w-8 text-purple-500 mb-2" />
-              <h2 className="text-xl font-bold text-white">Apexium AI</h2>
-            </div>
-
-            <div className="px-2 py-4 sm:px-6 lg:p-0">
+            <div className="card-glass rounded-2xl p-8">
               <div className="dark">
-                {showGoogle && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={signInWithGoogle}
-                      disabled={googleLoading}
-                      className="mb-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
-                    >
-                      {googleLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
-                          <path
-                            fill="currentColor"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                          />
-                          <path
-                            fill="currentColor"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          />
-                          <path
-                            fill="currentColor"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                          />
-                          <path
-                            fill="currentColor"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                          />
-                        </svg>
-                      )}
-                      Continue with Google
-                    </button>
-                    <div className="relative mb-4 flex items-center">
-                      <div className="grow border-t border-zinc-800" />
-                      <span className="mx-3 text-xs text-zinc-500">or</span>
-                      <div className="grow border-t border-zinc-800" />
-                    </div>
-                  </>
-                )}
                 <AuthView pathname={pathname} />
               </div>
             </div>
+
+            <p style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "rgba(255,255,255,0.2)", lineHeight: 1.6 }}>
+              By continuing, you agree to our{" "}
+              <a href="#" style={{ color: "rgba(139,92,246,0.7)", textDecoration: "none" }}>Terms</a>
+              {" "}and{" "}
+              <a href="#" style={{ color: "rgba(139,92,246,0.7)", textDecoration: "none" }}>Privacy Policy</a>
+            </p>
           </motion.div>
         </AnimatePresence>
       </section>
-
-      <style>{`
-        .dark input {
-          background-color: #0c0c0e !important;
-          border-color: #27272a !important;
-          color: #fafafa !important;
-        }
-        .dark input:focus {
-          border-color: #7c3aed !important;
-        }
-        .dark label { color: #a1a1aa !important; }
-        .dark button[type="submit"] {
-          font-weight: 600;
-          height: 2.75rem;
-          transition: transform 0.1s;
-        }
-        .dark button[type="submit"]:active { transform: scale(0.98); }
-        .dark a { color: #a78bfa !important; }
-      `}</style>
     </main>
   )
 }

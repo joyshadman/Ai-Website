@@ -21,6 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       navigate={navigate}
       Link={AuthLink}
       social={{ providers: ["google"] }}
+      credentials={false}
     >
       {children}
     </AuthUIProvider>
