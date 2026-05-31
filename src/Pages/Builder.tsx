@@ -338,6 +338,10 @@ const Builder: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
+  // ── FIX: track the last stable version id that had real code so the
+  //    iframe key never resets to a blank/null value mid-generation ──────
+  const [stableVersionKey, setStableVersionKey] = useState<string>("");
+
   const chatRef = useRef<HTMLDivElement>(null);
 
   const fetchCredits = useCallback(async () => {
@@ -352,14 +356,40 @@ const Builder: React.FC = () => {
     if (!silent) setLoading(true);
     try {
       const { data } = await api.get<{ project: Project }>(`/api/user/project/${projectId}`);
-      setProject(data.project);
-      setGenerating(!data.project.current_code);
+      const incoming = data.project;
+
+      setProject((prev) => {
+        // ── FIX: while generating, keep the previous code in state so the
+        //    iframe never receives null/empty and goes blank ────────────────
+        if (generating && !incoming.current_code && prev?.current_code) {
+          return {
+            ...incoming,
+            current_code: prev.current_code,
+            current_version_index: prev.current_version_index,
+          };
+        }
+        return incoming;
+      });
+
+      // ── FIX: only mark generation as done when the server confirms new code ──
+      const wasGenerating = generating;
+      const nowHasCode = !!incoming.current_code;
+      setGenerating(!nowHasCode);
+
+      // ── FIX: only update the iframe key when a new completed version arrives ──
+      if (incoming.current_version_index && nowHasCode) {
+        setStableVersionKey(incoming.current_version_index);
+      } else if (!incoming.current_version_index && nowHasCode && !wasGenerating) {
+        // first-ever load with code but no version index
+        setStableVersionKey(incoming.current_code!.length.toString());
+      }
+
     } catch (error: any) {
       if (!silent) toast.error(apiError(error));
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, generating]);
 
   useEffect(() => { fetchProject(); fetchCredits(); }, [fetchProject, fetchCredits]);
   useInterval(() => fetchProject(true), POLL_INTERVAL, generating);
@@ -374,21 +404,34 @@ const Builder: React.FC = () => {
   const confirmSend = async () => {
     if (!pendingMsg) return;
     const trimmed = pendingMsg;
-    setPendingMsg(null); setSending(true); setMessage("");
+    setPendingMsg(null);
+    setSending(true);
+    setMessage("");
+
+    // Optimistically append user message to chat
     setProject((prev) => prev ? {
-      ...prev, conversation: [...prev.conversation, {
-        id: Date.now().toString(), role: "user", content: trimmed, timestamp: new Date().toISOString(),
+      ...prev,
+      conversation: [...prev.conversation, {
+        id: Date.now().toString(),
+        role: "user",
+        content: trimmed,
+        timestamp: new Date().toISOString(),
       }],
     } : prev);
+
     try {
       await api.post(`/api/project/edit/${projectId}`, { message: trimmed });
       setCredits((c) => Math.max(0, c - EDIT_COST));
-      setGenerating(true);
+      // ── FIX: do NOT set generating(true) here — let the next poll do it
+      //    based on the actual server response. Setting it here caused the
+      //    iframe key to recalculate against null code → blank screen. ────
       setShowPreview(true);
     } catch (error: any) {
       toast.error(apiError(error));
     } finally {
       setSending(false);
+      // Trigger one immediate poll so the generating banner appears quickly
+      fetchProject(true);
     }
   };
 
@@ -633,11 +676,15 @@ const Builder: React.FC = () => {
               ) : (
                 <div className="transition-all duration-500 h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-white"
                   style={{ width: DEVICE_WIDTH[device], maxWidth: "100%" }}>
+                  {/* ── FIX: key is now stableVersionKey which only updates when
+                       a new completed version arrives — never during generation ── */}
                   <iframe
-                    key={project.current_version_index ?? project.current_code.length}
-                    srcDoc={project.current_code} title="Preview"
+                    key={stableVersionKey}
+                    srcDoc={project.current_code}
+                    title="Preview"
                     className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  />
                 </div>
               )}
             </div>
