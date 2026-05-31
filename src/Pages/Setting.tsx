@@ -18,7 +18,6 @@ const Setting = () => {
                         Manage your name, email and security preferences.
                     </p>
                 </div>
-
                 <div className="w-full">
                     <AccountSettingsCards 
                         classNames={{
