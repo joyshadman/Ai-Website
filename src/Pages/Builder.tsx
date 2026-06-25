@@ -607,6 +607,15 @@ const Builder: React.FC = () => {
             <span className="hidden sm:inline">Save</span>
           </button>
 
+          <button onClick={() => navigate(`/editor/${project.id}`)}
+            disabled={!project.current_code}
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-all disabled:opacity-30">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="hidden sm:inline">Drag & Drop</span>
+          </button>
+
           <button onClick={togglePublish} disabled={publishing || !project.current_code}
             className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 ${
               project.isPublished

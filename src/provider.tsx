@@ -1,6 +1,7 @@
 import React from "react"
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
 import { authClient } from "@/lib/auth-client"
+import { getAppOrigin } from "@/config/env"
 import { useNavigate, NavLink } from "react-router-dom"
 
 const AuthLink = ({ href, className, children }: {
@@ -18,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthUIProvider
       authClient={authClient}
+      baseURL={getAppOrigin()}
       navigate={navigate}
       Link={AuthLink}
       social={{ providers: ["google"] }}

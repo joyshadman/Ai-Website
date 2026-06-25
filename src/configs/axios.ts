@@ -1,8 +1,8 @@
 import axios from "axios";
+import { getApiBaseUrl } from "@/config/env";
 
-/** Same-origin /api in browser so session cookies match auth (Vercel proxy → Render). */
 const api = axios.create({
-  baseURL: typeof window !== "undefined" ? "" : undefined,
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
 });
 
