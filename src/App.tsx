@@ -5,6 +5,7 @@ import Comunity from './Pages/Comunity'
 import Price from './Pages/Price'
 import Project from './Pages/Project'
 import Builder from './Pages/Builder'
+import EditorPage from './Pages/editorpage'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import { Toaster } from "sonner"
@@ -44,7 +45,8 @@ const App = () => {
 
   const hideShell =
     /^\/project\/[^/]+$/.test(pathname) ||
-    /^\/preview\/[^/]+$/.test(pathname)
+    /^\/preview\/[^/]+$/.test(pathname) ||
+    /^\/editor\//.test(pathname)
 
   return (
     <>
@@ -78,6 +80,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/editor/:projectId" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
         <Route path="/auth/:pathname" element={<AuthPage />} />
         <Route
           path="/account/settings"
