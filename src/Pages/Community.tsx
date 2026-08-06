@@ -345,7 +345,7 @@ const Community: React.FC = () => {
                 <TrendingUp className="w-4 h-4" /> Global Showcase
               </div>
               <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 italic">
-                Comunity <span className="text-purple-500">published.</span>
+                Community <span className="text-purple-500">published.</span>
               </h1>
               <p className="text-gray-400 max-w-lg leading-relaxed">
                 Explore high-end digital experiences architected by the community

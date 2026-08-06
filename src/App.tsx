@@ -1,15 +1,15 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import Home from './Pages/Home'
-import Comunity from './Pages/Comunity'
+import Community from './Pages/Community'
 import Price from './Pages/Price'
 import Project from './Pages/Project'
 import Builder from './Pages/Builder'
-import EditorPage from './Pages/editorpage'
+import EditorPage from './Pages/EditorPage'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import { Toaster } from "sonner"
-import AuthPage from './Pages/auth/authpage'
+import AuthPage from './Pages/auth/AuthPage'
 import Settings from './Pages/Setting'
 import { authClient } from './lib/auth-client'
 
@@ -54,7 +54,7 @@ const App = () => {
       <Toaster richColors position="top-right" />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/comunity" element={<Comunity />} />
+        <Route path="/comunity" element={<Community />} />
         <Route path="/price" element={<Price />} />
         <Route
           path="/project"
