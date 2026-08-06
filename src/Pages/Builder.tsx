@@ -341,8 +341,16 @@ const Builder: React.FC = () => {
   // ── FIX: track the last stable version id that had real code so the
   //    iframe key never resets to a blank/null value mid-generation ──────
   const [stableVersionKey, setStableVersionKey] = useState<string>("");
+  // ── FIX: track a terminal generation failure so polling stops instead of
+  //    showing "Generating…" forever when the server refunds and gives up ──
+  const [generationFailed, setGenerationFailed] = useState(false);
 
   const chatRef = useRef<HTMLDivElement>(null);
+
+  // Mirror of `generating` for use inside fetchProject without making it a
+  // dependency (avoids the effect re-run loop that remounts the iframe).
+  const generatingRef = useRef(generating);
+  useEffect(() => { generatingRef.current = generating; }, [generating]);
 
   const fetchCredits = useCallback(async () => {
     try {
@@ -358,10 +366,19 @@ const Builder: React.FC = () => {
       const { data } = await api.get<{ project: Project }>(`/api/user/project/${projectId}`);
       const incoming = data.project;
 
+      const isGenerating = generatingRef.current;
+      const nowHasCode = !!incoming.current_code;
+      // The server writes "Generation failed. Your credits have been
+      // refunded..." when background generation gives up. Use it as the
+      // terminal state so we stop polling and show an error instead.
+      const failed = !nowHasCode && (incoming.conversation ?? []).some(
+        (m) => m.role === "assistant" && /^Generation failed/i.test(m.content)
+      );
+
       setProject((prev) => {
         // ── FIX: while generating, keep the previous code in state so the
         //    iframe never receives null/empty and goes blank ────────────────
-        if (generating && !incoming.current_code && prev?.current_code) {
+        if (isGenerating && !nowHasCode && prev?.current_code && !failed) {
           return {
             ...incoming,
             current_code: prev.current_code,
@@ -371,15 +388,16 @@ const Builder: React.FC = () => {
         return incoming;
       });
 
-      // ── FIX: only mark generation as done when the server confirms new code ──
-      const wasGenerating = generating;
-      const nowHasCode = !!incoming.current_code;
-      setGenerating(!nowHasCode);
+      // ── FIX: only mark generation as done when the server confirms new
+      //    code, and stop early on a terminal failure ─────────────────────
+      if (nowHasCode) setGenerationFailed(false);
+      else setGenerationFailed(failed);
+      setGenerating(!nowHasCode && !failed);
 
       // ── FIX: only update the iframe key when a new completed version arrives ──
       if (incoming.current_version_index && nowHasCode) {
         setStableVersionKey(incoming.current_version_index);
-      } else if (!incoming.current_version_index && nowHasCode && !wasGenerating) {
+      } else if (!incoming.current_version_index && nowHasCode && !isGenerating) {
         // first-ever load with code but no version index
         setStableVersionKey(incoming.current_code!.length.toString());
       }
@@ -389,7 +407,7 @@ const Builder: React.FC = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [projectId, generating]);
+  }, [projectId]);
 
   useEffect(() => { fetchProject(); fetchCredits(); }, [fetchProject, fetchCredits]);
   useInterval(() => fetchProject(true), POLL_INTERVAL, generating);
@@ -554,6 +572,8 @@ const Builder: React.FC = () => {
             <p className="text-[10px] flex items-center gap-1">
               {generating ? (
                 <><Loader2 className="w-2.5 h-2.5 animate-spin text-purple-400" /><span className="text-purple-400">Generating…</span></>
+              ) : generationFailed ? (
+                <><AlertTriangle className="w-2.5 h-2.5 text-red-400" /><span className="text-red-400">Generation failed</span></>
               ) : (
                 <><span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /><span className="text-gray-500">Ready</span></>
               )}
@@ -671,6 +691,17 @@ const Builder: React.FC = () => {
             <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 bg-[#060606]">
               {generating && !project.current_code ? (
                 <GeneratingPanel />
+              ) : generationFailed && !project.current_code ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-4 p-8">
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                  </div>
+                  <p className="text-sm text-gray-400">Generation failed. Your credits have been refunded.</p>
+                  <button onClick={() => navigate("/")}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-colors">
+                    Try again
+                  </button>
+                </div>
               ) : !project.current_code ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
                   <Code2 className="w-12 h-12" />
