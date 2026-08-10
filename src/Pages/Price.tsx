@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import Btn from "../components/Btn.tsx";
 
-// Define the shape of a pricing plan
 interface PricingPlan {
   title: string;
   price: string;
