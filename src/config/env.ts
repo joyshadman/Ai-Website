@@ -3,12 +3,8 @@ const PRODUCTION_FRONTEND = import.meta.env.VITE_PRODUCTION_FRONTEND?.trim() || 
 
 export function getApiBaseUrl(): string {
   const override = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (override) return override.replace(/\/$/, "");
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") return "";
-  }
-  return PRODUCTION_API;
+  if (override && override !== PRODUCTION_API) return override.replace(/\/$/, "");
+  return "";
 }
 
 export function getAppOrigin(): string {
